@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/public/css/style.css">
+    <link rel="stylesheet" href="/public/css/style_modal.css" />
+    <!-- flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <link rel="manifest" href="/manifest.json"><!--função para funcionar como app-->
+    <meta name="theme-color" content="#1a73e8"><!--função para funcionar como app-->
+    <title>Gerenciamento de Contas</title>
+
+</head>
+
+<script>
+    function validaSelector(event) {
+        if (event) event.preventDefault(); // Impede o envio padrão do formulário
+
+        const form = document.getElementById('form_selector');
+        const anoElement = form.querySelector("#ano"); // Seleciona o ano dentro do formulário
+        const mesElement = form.querySelector("#inputMes"); // Seleciona o mês dentro do formulário
+
+        const ano = anoElement.value; // Pega o valor do ano
+        const mes = mesElement.value; // Pega o valor do mês
+
+        // Validando as seleções
+        if (ano === "" && mes === "") {
+            alert('É necessário selecionar um ano e um mês.'); // Alerta apropriado
+        } else if (ano === "") {
+            alert('É necessário selecionar um ano.'); // Alerta apropriado
+        } else {
+            //form.submit(); // Envia o formulário se ambos ano e mês são válidos
+            getDadosTab(ano, mes);
+        }
+
+        document.querySelector('input[name="mes"]').value = mes;
+        document.querySelector('input[name="ano"]').value = ano;
+
+    }
+
+    function formatValor(valor) {
+        return `R$ ${Number(valor || 0).toFixed(2).replace('.', ',')}`;
+    }
+
+    async function getDadosTab(ano, mes) {
+        console.log("getDadosTab() Ano:", ano, "Mês:", mes);
+
+        const cardLimite = document.getElementById('card_total_limite');
+        const cardContas = document.getElementById('card_total_contas');
+        const card_total_pagas = document.getElementById('card_total_pagas');
+        var card_total_pendentes = document.getElementById('card_total_pendentes');
+
+        try {
+            const response = await fetch('dados_tab', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ano: ano, mes: mes })
+            });
+
+
+            const { sucess, contas, total_contas, total_contas_pagas, total_contas_pendentes, total_limite, limiteColor, mesSelecionado, anos, anoSelecionado, error } = await response.json();
+
+            if (sucess) {
+                console.log(document.getElementById('card_total_limite')); // deve mostrar o elemento ou null
+
+
+                if (cardLimite) {
+                    //const limite = Number(total_limite) || 0;
+                    cardLimite.innerHTML = formatValor(total_limite);
+
+                    //cardLimite.innerHTML = `R$ ${total_limite.toFixed(2).replace('.', ',')}`;
+                }
+                cardContas.innerHTML = formatValor(total_contas);
+                card_total_pagas.innerHTML = formatValor(total_contas_pagas);
+                card_total_pendentes.innerHTML = formatValor(total_contas_pendentes);
+
+                try {
+                    atualizaOuRecriaCards({
+                        mesSelecionado,
+                        limiteColor,
+                        total_limite,
+                        total_contas,
+                        total_contas_pagas,
+                        total_contas_pendentes
+                    });
+
+                    atualizaTabela(contas, mesSelecionado)
+                } catch (error) {
+                    console.error("Erro em uma das funçoes: " + error)
+                }
+            } else {
+                console.error(error)
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    function atualizaTabela(data, mesSelecionado) {
+        var tabela = document.getElementById('lista');
+
+        tabela.innerHTML = '<tr><th>Nome</th><th>Vencimento</th><th>Valor</th><th>Paga</th></tr>';
+
+        for (let i = 0; i < data.length; i++) {
+            //console.log('dentro do for')
+            const isChecked = data[i].paga ? "checked" : "";
+            //console.log('depois cheked')
+
+            tabela.innerHTML += `<tr>
+                <td>${data[i].nome}</td>
+                <td>${data[i].vencimento}</td>
+                <td>R$ ${data[i].valor.toFixed(2).replace('.', ',')}</td>
+                <td>
+                    <form action="/marcar-paga" method="post">
+                        <input type="hidden" name="mes" value="${mesSelecionado}">
+                        <input type="hidden" name="index" value="${data[i].id}">
+                        <input type="checkbox" name="paga" value="true" ${isChecked}
+                            onchange="this.form.submit()">
+                    </form>
+                </td>
+            </tr>`;
+
+        }
+    }
+
+    function atualizaOuRecriaCards(dados) {
+        const container = document.querySelector(".total-container");
+
+        if (!container) {
+            console.error("Container '.total-container' não encontrado.");
+            return;
+        }
+
+        const {
+            mesSelecionado = '',
+            limiteColor = '#eaeaea',
+            total_limite = 0,
+            total_contas = 0,
+            total_contas_pagas = 0,
+            total_contas_pendentes = 0
+        } = dados;
+
+        try {
+            // Cria os cards manualmente e evita innerHTML total
+            container.innerHTML = '';
+
+            if (mesSelecionado !== '') {
+                const cardLimite = document.createElement("div");
+                cardLimite.className = "total-card";
+                cardLimite.style.background = limiteColor;
+                cardLimite.innerHTML = `
+                <h4>Limite mês:</h4>
+                <h2 id="card_total_limite">R$ ${parseFloat(total_limite).toFixed(2).replace('.', ',')}</h2>`;
+                container.appendChild(cardLimite);
+            }
+
+            const cardContas = document.createElement("div");
+            cardContas.className = "total-card";
+            cardContas.innerHTML = `
+            <h4>Total de Contas:</h4>
+            <h2 id="card_total_contas">R$ ${parseFloat(total_contas).toFixed(2).replace('.', ',')}</h2>`;
+            container.appendChild(cardContas);
+
+            const cardPagas = document.createElement("div");
+            cardPagas.className = "total-card";
+            cardPagas.innerHTML = `
+            <h4>Contas Pagas:</h4>
+            <h2 id="card_total_pagas">R$ ${parseFloat(total_contas_pagas).toFixed(2).replace('.', ',')}</h2>`;
+            container.appendChild(cardPagas);
+
+            const cardPendentes = document.createElement("div");
+            cardPendentes.className = "total-card";
+            cardPendentes.innerHTML = `
+            <h4>Contas Pendentes:</h4>
+            <h2 id="card_total_pendentes">R$ ${parseFloat(total_contas_pendentes).toFixed(2).replace('.', ',')}</h2>`;
+            container.appendChild(cardPendentes);
+
+            console.log("Cards atualizados com sucesso.");
+        } catch (error) {
+            console.error("Erro ao atualizar cards:", error);
+        }
+    }
+
+    async function trataGerLimite() {
+
+        try {
+            const response = await fetch('save_limite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ano: ano, mes: mes })
+            });
+
+
+            const { sucess, data, error } = await response.json();
+        } catch (error) {
+
+        }
+    }
+
+    async function validaFormAdd(event) {
+        event.preventDefault(); // Impede o envio padrão
+
+        const form = event.target;
+
+        const nome = form.querySelector('input[name="nome"]').value;
+        const vencimento = form.querySelector('input[name="vencimento"]').value;
+        const valor = form.querySelector('input[name="valor"]').value;
+        const ano = form.querySelector('input[name="ano"]').value;
+        const mes = form.querySelector('input[name="mes"]').value;
+
+        try {
+            const response = await fetch('form_conta', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nome, vencimento, valor, ano, mes })
+            });
+
+            const { sucess, contas, total_contas, total_contas_pagas, total_contas_pendentes, total_limite, limiteColor, mesSelecionado, anos, anoSelecionado, error } = await response.json();
+
+            if (sucess) {
+                console.log('Requisição bem sucedida...');
+
+                atualizaOuRecriaCards({
+                    mesSelecionado,
+                    limiteColor,
+                    total_limite,
+                    total_contas,
+                    total_contas_pagas,
+                    total_contas_pendentes
+                });
+
+                atualizaTabela(contas, mes);
+
+                //Limpa os campos do formulario
+                form.querySelector('input[name="nome"]').value = "";
+                form.querySelector('input[name="vencimento"]').value = "";
+                form.querySelector('input[name="valor"]').value = "";
+
+                //form.querySelector('input[name="nome"]').focus();
+
+            } else {
+                console.log('Erro no post...');
+            }
+        } catch (error) {
+            console.error("Erro ao enviar dados do formulário:", error);
+        }
+
+        return false; // Impede o submit tradicional
+    }
+
+</script>
+
+<body>
+
+    <div class="container">
+        <h1>Gerenciamento de Contas</h1>
+
+        <!-- Inclusão do Menu -->
+        <%- include('menu') %>
+
+            <!-- Modal -->
+            <%- include('partials/gerenciar_limite') %>
+
+                <!-- Formulário para Seleção do Mês -->
+                <div class="selector-container">
+                    <form action="/" method="GET" id="form_selector" onsubmit="validaSelector(event)">
+                        <label for="ano">Ano:</label>
+                        <select id="ano" name="ano" onchange="validaSelector(event)">
+                            <% if (Array.isArray(anos) && anos.length> 0) { %>
+                                <% anos.forEach(ano=> { %>
+                                    <option value="<%= ano.ano %>" <%=anoSelecionado=== ano.ano ? 'selected' : '' %>>
+                                        <%= ano.ano %>
+                                    </option>
+                                    <% }); %>
+                                        <% } else { %>
+                                            <option value="">Nenhum ano disponível</option>
+                                            <% } %>
+                        </select>
+
+                        <label for="inputMes">Mês:</label>
+                        <select name="mes" id="inputMes" onchange="validaSelector(event)">
+                            <option value="" <%=mesSelecionado==="" ? 'selected' : '' %>>Todos</option>
+                            <option value="0" <%=mesSelecionado==='0' ? 'selected' : '' %>>Janeiro</option>
+                            <option value="1" <%=mesSelecionado==='1' ? 'selected' : '' %>>Fevereiro</option>
+                            <option value="2" <%=mesSelecionado==='2' ? 'selected' : '' %>>Março</option>
+                            <option value="3" <%=mesSelecionado==='3' ? 'selected' : '' %>>Abril</option>
+                            <option value="4" <%=mesSelecionado==='4' ? 'selected' : '' %>>Maio</option>
+                            <option value="5" <%=mesSelecionado==='5' ? 'selected' : '' %>>Junho</option>
+                            <option value="6" <%=mesSelecionado==='6' ? 'selected' : '' %>>Julho</option>
+                            <option value="7" <%=mesSelecionado==='7' ? 'selected' : '' %>>Agosto</option>
+                            <option value="8" <%=mesSelecionado==='8' ? 'selected' : '' %>>Setembro</option>
+                            <option value="9" <%=mesSelecionado==='9' ? 'selected' : '' %>>Outubro</option>
+                            <option value="10" <%=mesSelecionado==='10' ? 'selected' : '' %>>Novembro</option>
+                            <option value="11" <%=mesSelecionado==='11' ? 'selected' : '' %>>Dezembro</option>
+                        </select>
+                    </form>
+                </div>
+
+                <!-- Formulário para Adicionar Nova Conta -->
+                <form class="form_add" action="/" method="POST" onsubmit="return validaFormAdd(event)">
+                    <h2>Adicionar Nova Conta</h2>
+                    <div class="card_type">
+                        <input type="hidden" name="mes" value="<%= mesSelecionado %>">
+                        <input type="hidden" name="ano" value="<%= anoSelecionado %>">
+                        <input type="text" name="nome" placeholder="Nome da conta" required>
+
+                        <div class="row-fields">
+                            <input type="date" name="vencimento" required>
+                            <input type="text" name="valor" placeholder="Valor" required>
+                        </div>
+
+                        <button type="submit">Adicionar Conta</button>
+                    </div>
+                </form>
+
+                <!-- Exibição de Totais -->
+                <div class="total-container">
+                    <% if (mesSelecionado !=='' && mesSelecionado>= 0 && mesSelecionado <= 11) { %>
+                            <div class="total-card" style="background: <%= limiteColor %>">
+                                <h4>Limite mês:</h4>
+                                <h2 id="card_total_limite">R$<%= total_limite %>
+                                </h2>
+                            </div>
+                            <% } %>
+                                <div class="total-card">
+                                    <h4>Total de Contas:</h4>
+                                    <h2 id="card_total_contas">R$<%= total_contas.toFixed(2).replace('.', ',' ) %>
+                                    </h2>
+                                </div>
+                                <div class="total-card">
+                                    <h4>Contas Pagas:</h4>
+                                    <h2 id="card_total_pagas">R$<%= total_contas_pagas.toFixed(2).replace('.', ',' ) %>
+                                    </h2>
+                                </div>
+                                <div class="total-card">
+                                    <h4>Contas Pendentes:</h4>
+                                    <h2 id="card_total_pendentes">R$<%=
+                                            total_contas_pendentes.toFixed(2).replace('.', ',' ) %>
+                                    </h2>
+                                </div>
+                </div>
+
+
+                <!-- Tabela de Contas -->
+
+                <div class="table-responsive">
+                    <table id="lista">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Vencimento</th>
+                                <th>Valor</th>
+                                <th>Paga</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% contas.forEach((conta)=> { %>
+                                <tr>
+                                    <td>
+                                        <%= conta.nome %>
+                                    </td>
+                                    <td>
+                                        <%= conta.vencimento %>
+                                    </td>
+                                    <td>R$<%= conta.valor.toFixed(2).replace('.', ',' ) %>
+                                    </td>
+                                    <td>
+                                        <form action="/marcar-paga" method="post">
+                                            <input type="hidden" name="mes" value="<%= mesSelecionado %>">
+                                            <input type="hidden" name="index" value="<%= conta.id %>">
+                                            <input type="checkbox" name="paga" value="true" <% if (conta.paga) { %>
+                                            checked
+                                            <% } %>
+                                                onchange="this.form.submit()">
+                                        </form>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <button id="installApp" style="display:none;">Instalar app</button>
+
+                <!-- Rodapé -->
+                <footer>
+                    <p>&copy; 2025 - JVTSistemas</p>
+                </footer>
+    </div>
+
+    <script src="../../public/js/index/script.js"></script>
+    <script src="../../public/js/index/modal/script.js"></script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(() => console.log("Service Worker registrado com sucesso!"));
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); // Impede o comportamento automático
+            let deferredPrompt = e;
+
+            // Você pode mostrar um botão de "Instalar app"
+            const installBtn = document.getElementById('installApp');
+            installBtn.style.display = 'block';
+
+            installBtn.addEventListener('click', () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('Usuário aceitou instalar o app');
+                    } else {
+                        console.log('Usuário rejeitou');
+                    }
+                    deferredPrompt = null;
+                });
+            });
+        });
+    </script>
+
+</body>
+
+</html>

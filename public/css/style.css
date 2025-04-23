@@ -1,0 +1,345 @@
+/* Estilos Globais */
+body {
+    font-family: sans-serif;
+    /* Fonte padrão */
+    margin: 0;
+    padding: 0;
+}
+
+/* Estilo do Conteiner */
+.container {
+    max-width: 1200px;
+    /* Largura máxima do contêiner */
+    margin: 0 auto;
+    /* Centralização horizontal */
+    padding: 10px;
+    /* Padding */
+}
+
+/* Estilos para Título */
+.container h1 {
+    font-size: 2.5rem;
+    /* Tamanho da fonte */
+    font-weight: 700;
+    /* Estilo da fonte: bold */
+    text-align: center;
+    /* Centralizar o texto */
+    margin: 10px 0;
+    /* Margem acima e abaixo */
+    color: #343a40;
+    /* Cor do texto */
+    text-transform: uppercase;
+    /* Transformar texto em maiúsculas */
+    letter-spacing: 1px;
+    /* Espaçamento entre letras */
+}
+
+/* Estilos do Menu */
+.container-menu{
+    display: flex;
+    /*background-color: #eaecee;*/
+    align-items: center;
+    flex-direction: row;
+}
+
+.container-menu button {
+    padding: 10px 15px;
+}
+
+.navbar {
+    background-color: #f8f9fa;
+    /* Fundo do menu */
+    padding: 8px;
+    /* Espaciamento interno do menu */
+    display: flex;
+    /* Flexbox para disposição */
+    justify-content: space-between;
+    /* Espaço entre itens */
+    align-items: center;
+    /* Centralização vertical */
+    position: relative;
+    /* Necessário para o menu suspenso */
+    width: 85%;
+}
+
+.navbar-brand {
+    font-size: 16px;
+    /* Tamanho da fonte da marca */
+    text-decoration: none;
+    /* Remove sublinhado */
+    color: #000;
+    /* Cor da marca */
+}
+
+.navbar-nav {
+    list-style: none;
+    /* Remove marcadores de lista */
+    padding: 0;
+    /* Remove padding */
+    margin: 0;
+    /* Remove margin */
+    display: flex;
+    /* Flexbox para os itens da lista */
+}
+
+.navbar-nav li {
+    margin-left: 20px;
+    /* Espaçamento entre links */
+}
+
+.navbar-nav a {
+    text-decoration: none;
+    /* Remove sublinhado */
+    color: #343a40;
+    /* Cor dos links */
+    font-size: 1rem;
+    /* Tamanho da fonte dos links */
+}
+
+.navbar-nav a:hover {
+    color: #007bff;
+    /* Cor ao passar o mouse */
+}
+
+/* Menu Hamburger */
+.menu-toggle {
+    display: none;
+    /* Inicia escondido */
+    flex-direction: column;
+    /* Para empilhar os riscos */
+    cursor: pointer;
+    /* Cursor de mão ao passar o mouse */
+}
+
+.menu-toggle div {
+    width: 30px;
+    /* Largura dos riscos */
+    height: 3px;
+    /* Altura dos riscos */
+    background-color: #343a40;
+    /* Cor dos riscos */
+    margin: 4px 0;
+    /* Espaço entre os riscos */
+    transition: 0.3s;
+    /* Transição suave */
+}
+
+/* Estilos para Total Container e Boxes */
+.total-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 20px 0;
+}
+
+.total-card {
+    background: #e0f2fe;
+    padding: 10px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    min-width: 110px;
+    flex: 1;
+}
+
+.total-card h4 {
+    margin: 0 0 4px;
+    font-weight: normal;
+    font-size: 14px;
+}
+
+.total-card h2 {
+    margin: 0;
+    font-weight: bold;
+    font-size: 11px;
+}
+
+/* Estilo para o formulário de adicionar conta */
+.form_add {
+    background-color: #f8f9fa;
+    margin: 0 auto;
+}
+
+.form_add h2 {
+    font-weight: bold;
+    font-size: 1.2rem;
+    text-align: center;
+    padding-top: 5px;
+}
+
+.form_add input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+.form_add .card_type {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form_add .card_type input[type="text"] {
+    width: 98%;
+}
+
+.form_add .row-fields {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.form_add .row-fields input {
+    flex: 1;
+}
+
+.form_add button {
+    padding: 10px;
+    /* Padding interno do botão */
+    background-color: #5397e0;
+    /* Cor do botão */
+    color: white;
+    /* Cor do texto do botão */
+    border: none;
+    /* Sem borda */
+    border-radius: 5px;
+    /* Bordas arredondadas */
+    cursor: pointer;
+    /* Cursor de mão ao passar o mouse */
+    width: 100%;
+    /* Largura total */
+    font-size: 1rem;
+    /* Tamanho da fonte do botão */
+}
+
+button:hover {
+    background-color: #0056b3;
+    /* Cor do botão ao passar o mouse */
+}
+
+/* Estilo da Tabela */
+table {
+    width: 100%;
+    /* Largura total */
+    border-collapse: collapse;
+    /* Combina as bordas */
+    margin-top: 20px;
+    /* Espaço acima da tabela */
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    /* Bordas das células */
+    padding: 10px;
+    /* Padding nas células */
+    text-align: left;
+    /* Alinhamento à esquerda */
+}
+
+th {
+    background-color: #f2f2f2;
+    /* Fundo do cabeçalho da tabela */
+}
+
+/* Estilo do Rodapé */
+footer {
+    margin-top: 40px;
+    /* Espaço acima do rodapé */
+    text-align: center;
+    /* Centralização do texto do rodapé */
+    color: #6c757d;
+    /* Cor do texto do rodapé */
+}
+
+/*style do selector */
+
+.selector-container {
+    margin: 20px 0;
+}
+
+.selector-container form {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.selector-container label {
+    font-weight: 500;
+    color: #444;
+    margin-bottom: 5px;
+    display: block;
+    font-size: 14px;
+}
+
+.selector-container .field-group {
+    flex: 1;
+    min-width: 0;
+}
+
+.selector-container select {
+    padding: 10px 10px;              /* Espaçamento interno para deixar o texto confortável */
+    font-size: 15px;                 /* Define o tamanho da fonte do texto dentro do select */
+    border: 1px solid #ccc;          /* Borda cinza clara ao redor do campo */
+    border-radius: 6px;              /* Cantos arredondados para aparência mais moderna */
+    transition: border 0.3s;         /* Animação suave ao mudar a borda (quando focado, por exemplo) */
+    width: 100%;                     /* O select ocupa toda a largura disponível do container */
+    text-overflow: ellipsis;        /* Se o texto for muito longo, mostra "..." no final */
+    white-space: nowrap;            /* Impede o texto de quebrar para a próxima linha */
+    overflow: hidden;               /* Esconde qualquer conteúdo que ultrapasse os limites do campo */
+  }
+  
+
+.selector-container select:focus {
+    border-color: #5397e0;
+    outline: none;
+}
+
+
+/* Estilos Responsivos */
+@media (max-width: 768px) {
+
+    /*--  Titulo --*/
+    .container h1 {
+        font-size: 1.5rem;
+        /* Tamanho menor em telas pequenas */
+    }
+
+    .navbar-nav {
+        display: none;
+        /* Esconder a lista de links no mobile */
+        flex-direction: column;
+        /* Empilhar links na vertical */
+        width: 100%;
+        /* Largura total do menu */
+        position: absolute;
+        /* Posicionamento absoluto */
+        background-color: #f8f9fa;
+        /* Cor do fundo do menu */
+        top: 48px;
+        /* Distância do topo */
+        left: 0;
+        /* Alinhamento à esquerda */
+        padding: 10px 0;
+        /* Padding para o menu */
+        z-index: 10;
+        /* Colocar em cima de outros elementos */
+    }
+
+    .navbar-nav.show {
+        display: flex;
+        /* Mostrar lista de links quando ativa */
+    }
+
+    .menu-toggle {
+        display: flex;
+        /* Mostrar botão hamburger */
+    }
+
+    .form_add .row-fields {
+        flex-direction: row;
+    }
+
+}
