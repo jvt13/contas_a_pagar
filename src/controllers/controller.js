@@ -94,7 +94,15 @@ const getContas = async (req, res) => {
 
         // Calcular total de contas pendentes
         const totalContasPendentes = contas.reduce((total, conta) => total + (!conta.paga ? conta.valor : 0), 0) || 0;
-        const limite_gastos = '5000';
+
+        let limite_gastos = await model.getLimite((mesSelecionado+1), anoSelecionado);
+
+        if(!limite_gastos){
+            limite_gastos = 0;
+        }else{
+            limite_gastos = limite_gastos.limite
+            console.log('Limite: ' + limite_gastos)
+        }
 
         console.log(`Ano selecionado: ${anoSelecionado} / Mês selecionado: ${mesSelecionado}`);
         const limiteColor = (mesSelecionado !== '' && mesSelecionado >= 0 && mesSelecionado <= 11)

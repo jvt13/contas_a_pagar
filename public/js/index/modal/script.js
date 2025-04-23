@@ -22,11 +22,11 @@ async function enviarPost(event) {
   const anoSelecionado = ano_select.value || novo_ano;
   let mesNum = parseInt(mes) + 1;
 
-  const mensagem = 'O campo do ano está vazio. Se o ano desejado não estiver na lista, clique no botão ao lado para adicionar um novo ano. Uma vez que o mês e o limite estejam preenchidos, clique no botão "Salvar Limite" para finalizar.';
+  const mensagem = 'O campo do ano está vazio. Se o ano desejado não estiver na lista, clique no botão ao lado para adicionar um novo ano. Após a ação, uma vez que o mês e o limite estejam preenchidos, clique no botão "Salvar Limite" para finalizar.';
 
   try {
     
-    if (!anoSelecionado) {
+    if (ano_select === '' && novo_ano == '') {
         alert(mensagem);
         return false;
     }
@@ -46,6 +46,7 @@ async function enviarPost(event) {
       await inserirLimite(ano, mesNum, limite);
     }
 
+    form.querySelector("#limite").value = '';
     form.querySelector("#limite").value = '';
   } catch (error) {
     console.error('Erro:', error);

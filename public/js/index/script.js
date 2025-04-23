@@ -11,8 +11,13 @@ document.getElementById('abrirModal').onclick = function() {
 };
 
 document.getElementById('fecharModal').onclick = function() {
-    document.getElementById('modalGerenciarLimite').style.display = 'none'; // Oculta o modal
+    //document.getElementById('modalGerenciarLimite').style.display = 'none'; // Oculta o modal
+    fecharModal('modalGerenciarLimite');
 };
+
+function fecharModal(nome){
+    document.getElementById(nome).style.display = 'none'; // Oculta o modal
+}
 
 // Fecha o modal se o usuário clicar fora da área do modal
 window.onclick = function(event) {
@@ -28,3 +33,5 @@ window.onclick = function(event) {
         navbarNav.classList.toggle('none');
     }*/
 };
+
+module.exports = {fecharModal}
