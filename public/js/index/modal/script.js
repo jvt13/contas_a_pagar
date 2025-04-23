@@ -16,11 +16,26 @@ async function enviarPost(event) {
   if (event) event.preventDefault(); // Impede o envio padrão do formulário
   const form = document.getElementById('form_addLimite');
   const mes = form.querySelector("#mes").value;
-  const ano = form.querySelector("#ano").value;
+  const ano_select = form.querySelector("#ano").value;
   const limite = form.querySelector("#limite").value;
+  const novo_ano = form.querySelector("#novo_ano").value;
+  const anoSelecionado = ano_select.value || novo_ano;
   let mesNum = parseInt(mes) + 1;
 
+  const mensagem = 'O campo do ano está vazio. Se o ano desejado não estiver na lista, clique no botão ao lado para adicionar um novo ano. Uma vez que o mês e o limite estejam preenchidos, clique no botão "Salvar Limite" para finalizar.';
+
   try {
+    
+    if (!anoSelecionado) {
+        alert(mensagem);
+        return false;
+    }
+
+    if(ano_select === ''){
+      ano = novo_ano;
+    }else{
+      ano = ano_select;
+    }
     const id = await obterIdLimite(ano, mesNum);
     
     if (id) {
