@@ -7,6 +7,7 @@ const session = require('express-session');
 const ejs = require('ejs');
 const router = require('./src/routers/routers');
 // const util = require('./src/utils/util'); // 🔹 Se "util" for um módulo seu, importe aqui!
+const estrutura = require('./src/database/estrutura');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -15,7 +16,7 @@ const PORT = process.env.PORT || 5000;
 const options = {
     key: fs.readFileSync(path.join(__dirname, 'cert/server.key')),
     cert: fs.readFileSync(path.join(__dirname, 'cert/server.cert'))
-  };
+};
 
 // Middleware para tratar JSON e formulários grandes
 app.use(bodyParser.json({ limit: '50mb' }));
@@ -39,6 +40,16 @@ app.set('views', path.join(__dirname, '/src/views'));
 
 // Definição das rotas
 app.use('/', router);
+
+async function setupDatabase() {
+    await estrutura.createDatabaseIfNotExists();
+    // Após criar o banco, atualize a configuração do pool para usar o novo banco
+    // ou reinicie a aplicação para que o pool se conecte ao banco recém-criado
+    await estrutura.createTablesIfNotExist();
+}
+
+setupDatabase();
+
 
 // Inicialização do servidor com verificação de porta
 function startServer(port) {
