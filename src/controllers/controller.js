@@ -137,10 +137,10 @@ const getContas = async (req, res) => {
 
 // Função para adicionar nova conta ao banco de dados
 const addConta = async (req, res) => {
-    const { nome, vencimento, valor, mes, ano } = req.body;
+    const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao } = req.body;
 
     try {
-        await model.addConta({ nome, vencimento, valor }); // Adiciona a nova conta
+        await model.addConta({ nome, vencimento, valor, categoria, tipo_cartao }); // Adiciona a nova conta
         console.log(`Conta ${nome} inserido com sucesso!!!`)
 
         // Chama getContas para obter todas as contas e renderizar a página

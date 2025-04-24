@@ -35,7 +35,7 @@ body {
 }
 
 /* Estilos do Menu */
-.container-menu{
+.container-menu {
     display: flex;
     /*background-color: #eaecee;*/
     align-items: center;
@@ -43,13 +43,15 @@ body {
 }
 
 .container-menu button {
-    padding: 10px 15px;
+    padding: 0 auto;
+    flex: 1;
+    border-radius: 5px 5px 5px 5px;
 }
 
 .navbar {
     background-color: #f8f9fa;
     /* Fundo do menu */
-    padding: 8px;
+    /*padding: 8px;*/
     /* Espaciamento interno do menu */
     display: flex;
     /* Flexbox para disposição */
@@ -59,7 +61,9 @@ body {
     /* Centralização vertical */
     position: relative;
     /* Necessário para o menu suspenso */
-    width: 85%;
+    width: 95%;
+    box-sizing: border-box;
+
 }
 
 .navbar-brand {
@@ -109,6 +113,7 @@ body {
     /* Para empilhar os riscos */
     cursor: pointer;
     /* Cursor de mão ao passar o mouse */
+    margin-right: 10px;
 }
 
 .menu-toggle div {
@@ -173,7 +178,7 @@ body {
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 14px;
-  }
+}
 
 .form_add .card_type {
     display: flex;
@@ -185,14 +190,71 @@ body {
     width: 98%;
 }
 
+.form_add .row-cct {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.form_add .row-cct select,
+.form_add .row-cct input {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+    min-width: 150px;
+    flex: 1;
+}
+
+.form_add .row-cct select:focus,
+.form_add .row-cct input:focus {
+    border-color: #5397e0;
+    outline: none;
+}
+
+
+.form_add .row-cct .input-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 180px;
+}
+
 .form_add .row-fields {
     display: flex;
     gap: 10px;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+.form_add .row-fields .input-group {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 180px;
+}
+
+
+.form_add .row-fields {
+    display: flex;
+    gap: 15px;
     width: 100%;
 }
 
 .form_add .row-fields input {
     flex: 1;
+    box-sizing: border-box;
+    min-width: unset;
+    width: 100%;
+
+}
+
+.form_add .row-fields input[type="text"]:focus,
+input[type="date"]:focus {
+    border-color: #5397e0;
+    outline: none;
 }
 
 .form_add button {
@@ -280,17 +342,26 @@ footer {
 }
 
 .selector-container select {
-    padding: 10px 10px;              /* Espaçamento interno para deixar o texto confortável */
-    font-size: 15px;                 /* Define o tamanho da fonte do texto dentro do select */
-    border: 1px solid #ccc;          /* Borda cinza clara ao redor do campo */
-    border-radius: 6px;              /* Cantos arredondados para aparência mais moderna */
-    transition: border 0.3s;         /* Animação suave ao mudar a borda (quando focado, por exemplo) */
-    width: 100%;                     /* O select ocupa toda a largura disponível do container */
-    text-overflow: ellipsis;        /* Se o texto for muito longo, mostra "..." no final */
-    white-space: nowrap;            /* Impede o texto de quebrar para a próxima linha */
-    overflow: hidden;               /* Esconde qualquer conteúdo que ultrapasse os limites do campo */
-  }
-  
+    padding: 8px 8px;
+    /* Espaçamento interno para deixar o texto confortável */
+    font-size: 14px;
+    /* Define o tamanho da fonte do texto dentro do select */
+    border: 1px solid #ccc;
+    /* Borda cinza clara ao redor do campo */
+    border-radius: 6px;
+    /* Cantos arredondados para aparência mais moderna */
+    transition: border 0.3s;
+    /* Animação suave ao mudar a borda (quando focado, por exemplo) */
+    width: 100%;
+    /* O select ocupa toda a largura disponível do container */
+    text-overflow: ellipsis;
+    /* Se o texto for muito longo, mostra "..." no final */
+    white-space: nowrap;
+    /* Impede o texto de quebrar para a próxima linha */
+    overflow: hidden;
+    /* Esconde qualquer conteúdo que ultrapasse os limites do campo */
+}
+
 
 .selector-container select:focus {
     border-color: #5397e0;

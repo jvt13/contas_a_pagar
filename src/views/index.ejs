@@ -210,12 +210,16 @@
         const valor = form.querySelector('input[name="valor"]').value;
         const ano = form.querySelector('input[name="ano"]').value;
         const mes = form.querySelector('input[name="mes"]').value;
+        const categoria = form.querySelector('#categoria').value;
+        const tipo_cartao = form.querySelector('#tipo_cartao').value;
+
+        alert('Categoria: ' + categoria)
 
         try {
             const response = await fetch('form_conta', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, vencimento, valor, ano, mes })
+                body: JSON.stringify({ nome, vencimento, valor, ano, mes, categoria, tipo_cartao })
             });
 
             const { sucess, contas, total_contas, total_contas_pagas, total_contas_pendentes, total_limite, limiteColor, mesSelecionado, anos, anoSelecionado, error } = await response.json();
@@ -251,6 +255,20 @@
         return false; // Impede o submit tradicional
     }
 
+    function editarConta() {
+        alert("Editar conta ID: " + contaSelecionadaId);
+        // Aqui você pode abrir outro modal ou redirecionar para formulário de edição
+    }
+
+    function excluirConta() {
+        const confirmacao = confirm("Deseja excluir esta conta?");
+        if (confirmacao) {
+            alert("Excluindo conta ID: " + contaSelecionadaId);
+            // Chame fetch ou AJAX para excluir no backend
+        }
+    }
+
+
 </script>
 
 <body>
@@ -263,132 +281,170 @@
 
             <!-- Modal -->
             <%- include('partials/gerenciar_limite') %>
+                <%- include('partials/acao_tab') %>
 
-                <!-- Formulário para Seleção do Mês -->
-                <div class="selector-container">
-                    <form action="/" method="GET" id="form_selector" onsubmit="validaSelector(event)">
-                        <label for="ano">Ano:</label>
-                        <select id="ano" name="ano" onchange="validaSelector(event)">
-                            <% if (Array.isArray(anos) && anos.length> 0) { %>
-                                <% anos.forEach(ano=> { %>
-                                    <option value="<%= ano.ano %>" <%=anoSelecionado=== ano.ano ? 'selected' : '' %>>
-                                        <%= ano.ano %>
-                                    </option>
-                                    <% }); %>
-                                        <% } else { %>
-                                            <option value="">Nenhum ano disponível</option>
-                                            <% } %>
-                        </select>
+                    <!-- Formulário para Seleção do Mês -->
+                    <div class="selector-container">
+                        <form action="/" method="GET" id="form_selector" onsubmit="validaSelector(event)">
+                            <label for="ano">Ano:</label>
+                            <select id="ano" name="ano" onchange="validaSelector(event)">
+                                <% if (Array.isArray(anos) && anos.length> 0) { %>
+                                    <% anos.forEach(ano=> { %>
+                                        <option value="<%= ano.ano %>" <%=anoSelecionado===ano.ano ? 'selected' : '' %>>
+                                            <%= ano.ano %>
+                                        </option>
+                                        <% }); %>
+                                            <% } else { %>
+                                                <option value="">Nenhum ano disponível</option>
+                                                <% } %>
+                            </select>
 
-                        <label for="inputMes">Mês:</label>
-                        <select name="mes" id="inputMes" onchange="validaSelector(event)">
-                            <option value="" <%=mesSelecionado==="" ? 'selected' : '' %>>Todos</option>
-                            <option value="0" <%=mesSelecionado==='0' ? 'selected' : '' %>>Janeiro</option>
-                            <option value="1" <%=mesSelecionado==='1' ? 'selected' : '' %>>Fevereiro</option>
-                            <option value="2" <%=mesSelecionado==='2' ? 'selected' : '' %>>Março</option>
-                            <option value="3" <%=mesSelecionado==='3' ? 'selected' : '' %>>Abril</option>
-                            <option value="4" <%=mesSelecionado==='4' ? 'selected' : '' %>>Maio</option>
-                            <option value="5" <%=mesSelecionado==='5' ? 'selected' : '' %>>Junho</option>
-                            <option value="6" <%=mesSelecionado==='6' ? 'selected' : '' %>>Julho</option>
-                            <option value="7" <%=mesSelecionado==='7' ? 'selected' : '' %>>Agosto</option>
-                            <option value="8" <%=mesSelecionado==='8' ? 'selected' : '' %>>Setembro</option>
-                            <option value="9" <%=mesSelecionado==='9' ? 'selected' : '' %>>Outubro</option>
-                            <option value="10" <%=mesSelecionado==='10' ? 'selected' : '' %>>Novembro</option>
-                            <option value="11" <%=mesSelecionado==='11' ? 'selected' : '' %>>Dezembro</option>
-                        </select>
-                    </form>
-                </div>
-
-                <!-- Formulário para Adicionar Nova Conta -->
-                <form class="form_add" action="/" method="POST" onsubmit="return validaFormAdd(event)">
-                    <h2>Adicionar Nova Conta</h2>
-                    <div class="card_type">
-                        <input type="hidden" name="mes" value="<%= mesSelecionado %>">
-                        <input type="hidden" name="ano" value="<%= anoSelecionado %>">
-                        <input type="text" name="nome" placeholder="Nome da conta" required>
-
-                        <div class="row-fields">
-                            <input type="date" name="vencimento" required>
-                            <input type="text" name="valor" placeholder="Valor" required>
-                        </div>
-
-                        <button type="submit">Adicionar Conta</button>
+                            <label for="inputMes">Mês:</label>
+                            <select name="mes" id="inputMes" onchange="validaSelector(event)">
+                                <option value="" <%=mesSelecionado==="" ? 'selected' : '' %>>Todos</option>
+                                <option value="0" <%=mesSelecionado==='0' ? 'selected' : '' %>>Janeiro</option>
+                                <option value="1" <%=mesSelecionado==='1' ? 'selected' : '' %>>Fevereiro</option>
+                                <option value="2" <%=mesSelecionado==='2' ? 'selected' : '' %>>Março</option>
+                                <option value="3" <%=mesSelecionado==='3' ? 'selected' : '' %>>Abril</option>
+                                <option value="4" <%=mesSelecionado==='4' ? 'selected' : '' %>>Maio</option>
+                                <option value="5" <%=mesSelecionado==='5' ? 'selected' : '' %>>Junho</option>
+                                <option value="6" <%=mesSelecionado==='6' ? 'selected' : '' %>>Julho</option>
+                                <option value="7" <%=mesSelecionado==='7' ? 'selected' : '' %>>Agosto</option>
+                                <option value="8" <%=mesSelecionado==='8' ? 'selected' : '' %>>Setembro</option>
+                                <option value="9" <%=mesSelecionado==='9' ? 'selected' : '' %>>Outubro</option>
+                                <option value="10" <%=mesSelecionado==='10' ? 'selected' : '' %>>Novembro</option>
+                                <option value="11" <%=mesSelecionado==='11' ? 'selected' : '' %>>Dezembro</option>
+                            </select>
+                        </form>
                     </div>
-                </form>
 
-                <!-- Exibição de Totais -->
-                <div class="total-container">
-                    <% if (mesSelecionado !=='' && mesSelecionado>= 0 && mesSelecionado <= 11) { %>
-                            <div class="total-card" style="background: <%= limiteColor %>">
-                                <h4>Limite mês:</h4>
-                                <h2 id="card_total_limite">R$<%= total_limite %>
-                                </h2>
+                    <!-- Formulário para Adicionar Nova Conta -->
+                    <form class="form_add" action="/" method="POST" onsubmit="return validaFormAdd(event)">
+                        <h2>Adicionar Nova Conta</h2>
+                        <div class="card_type">
+                            <input type="hidden" name="mes" value="<%= mesSelecionado %>">
+                            <input type="hidden" name="ano" value="<%= anoSelecionado %>">
+
+                            <div class="row-cct">
+                                <div class="input-group">
+                                    <label for="nome">Nome da Conta:</label>
+                                    <input type="text" name="nome" placeholder="Nome da conta" required>
+                                </div>
+
+                                <div class="input-group">
+                                    <label for="categoria">Categoria:</label>
+                                    <select id="categoria" name="categoria">
+                                        <option value="">Selecione a Categoria</option>
+                                        <option value="fixa">Contas Fixas</option>
+                                        <option value="variavel">Contas Variáveis</option>
+                                        <option value="renda">Contas de Renda</option>
+                                    </select>
+                                </div>
+
+                                <div class="input-group">
+                                    <label for="tipoCartao">Tipo de Cartão:</label>
+                                    <select id="tipoCartao" name="tipoCartao">
+                                        <option value="">Selecione o Tipo de Cartão</option>
+                                        <option value="credito">Cartão de Crédito</option>
+                                        <option value="debito">Cartão de Débito</option>
+                                        <option value="pre-pago">Cartão Pré-Pago</option>
+                                        <option value="outro">Outro</option>
+                                    </select>
+                                </div>
                             </div>
-                            <% } %>
-                                <div class="total-card">
-                                    <h4>Total de Contas:</h4>
-                                    <h2 id="card_total_contas">R$<%= total_contas.toFixed(2).replace('.', ',' ) %>
-                                    </h2>
-                                </div>
-                                <div class="total-card">
-                                    <h4>Contas Pagas:</h4>
-                                    <h2 id="card_total_pagas">R$<%= total_contas_pagas.toFixed(2).replace('.', ',' ) %>
-                                    </h2>
-                                </div>
-                                <div class="total-card">
-                                    <h4>Contas Pendentes:</h4>
-                                    <h2 id="card_total_pendentes">R$<%=
-                                            total_contas_pendentes.toFixed(2).replace('.', ',' ) %>
-                                    </h2>
-                                </div>
-                </div>
 
 
-                <!-- Tabela de Contas -->
+                            <div class="row-fields">
+                                <div class="input-group">
+                                    <label for="data_vencimento">Vencimento</label>
+                                    <input type="date" name="vencimento" required>
+                                </div>
 
-                <div class="table-responsive">
-                    <table id="lista">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Vencimento</th>
-                                <th>Valor</th>
-                                <th>Paga</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% contas.forEach((conta)=> { %>
+                                <div class="input-group">
+                                    <label for="valor">Valor da Conta</label>
+                                    <input type="text" name="valor" placeholder="Valor" required>
+                                </div>
+                            </div>
+
+
+                            <button type="submit">Adicionar Conta</button>
+                        </div>
+                    </form>
+
+                    <!-- Exibição de Totais -->
+                    <div class="total-container">
+                        <% if (mesSelecionado !=='' && mesSelecionado>= 0 && mesSelecionado <= 11) { %>
+                                <div class="total-card" style="background: <%= limiteColor %>">
+                                    <h4>Limite mês:</h4>
+                                    <h2 id="card_total_limite">R$<%= total_limite %>
+                                    </h2>
+                                </div>
+                                <% } %>
+                                    <div class="total-card">
+                                        <h4>Total de Contas:</h4>
+                                        <h2 id="card_total_contas">R$<%= total_contas.toFixed(2).replace('.', ',' ) %>
+                                        </h2>
+                                    </div>
+                                    <div class="total-card">
+                                        <h4>Contas Pagas:</h4>
+                                        <h2 id="card_total_pagas">R$<%= total_contas_pagas.toFixed(2).replace('.', ',' )
+                                                %>
+                                        </h2>
+                                    </div>
+                                    <div class="total-card">
+                                        <h4>Contas Pendentes:</h4>
+                                        <h2 id="card_total_pendentes">R$<%=
+                                                total_contas_pendentes.toFixed(2).replace('.', ',' ) %>
+                                        </h2>
+                                    </div>
+                    </div>
+
+
+                    <!-- Tabela de Contas -->
+
+                    <div class="table-responsive">
+                        <table id="lista">
+                            <thead>
                                 <tr>
-                                    <td>
-                                        <%= conta.nome %>
-                                    </td>
-                                    <td>
-                                        <%= conta.vencimento %>
-                                    </td>
-                                    <td>R$<%= conta.valor.toFixed(2).replace('.', ',' ) %>
-                                    </td>
-                                    <td>
-                                        <form action="/marcar-paga" method="post">
-                                            <input type="hidden" name="mes" value="<%= mesSelecionado %>">
-                                            <input type="hidden" name="index" value="<%= conta.id %>">
-                                            <input type="checkbox" name="paga" value="true" <% if (conta.paga) { %>
-                                            checked
-                                            <% } %>
-                                                onchange="this.form.submit()">
-                                        </form>
-                                    </td>
+                                    <th>Nome</th>
+                                    <th>Vencimento</th>
+                                    <th>Valor</th>
+                                    <th>Paga</th>
                                 </tr>
-                                <% }); %>
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody>
+                                <% contas.forEach((conta)=> { %>
+                                    <tr onclick="abrirModalConta(<%= conta.id %>, '<%= conta.nome.replace(/'/g, "\\'") %>')">
+                                        <td>
+                                            <%= conta.nome %>
+                                        </td>
+                                        <td>
+                                            <%= conta.vencimento %>
+                                        </td>
+                                        <td>R$<%= conta.valor.toFixed(2).replace('.', ',' ) %>
+                                        </td>
+                                        <td>
+                                            <form action="/marcar-paga" method="post">
+                                                <input type="hidden" name="mes" value="<%= mesSelecionado %>">
+                                                <input type="hidden" name="index" value="<%= conta.id %>">
+                                                <input type="checkbox" name="paga" value="true" <% if (conta.paga) { %>
+                                                checked
+                                                <% } %>
+                                                    onchange="this.form.submit()">
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
 
-                <button id="installApp" style="display:none;">Instalar app</button>
+                    <button id="installApp" style="display:none;">Instalar app</button>
 
-                <!-- Rodapé -->
-                <footer>
-                    <p>&copy; 2025 - JVTSistemas</p>
-                </footer>
+                    <!-- Rodapé -->
+                    <footer>
+                        <p>&copy; 2025 - JVTSistemas</p>
+                    </footer>
     </div>
 
     <script src="../../public/js/index/script.js"></script>

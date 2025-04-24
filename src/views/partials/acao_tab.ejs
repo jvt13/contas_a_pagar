@@ -1,0 +1,44 @@
+<!-- Modal de Ações da Conta -->
+<div id="modalConta" class="modal_acao_tab" style="display: none;">
+    <div class="modal-conteudo">
+      <span class="fechar" onclick="fecharModalConta()">&times;</span>
+      <h2 id="modalContaTitulo">Conta Selecionada</h2>
+      <p id="modalContaInfo"></p>
+  
+      <div class="modal-botoes">
+        <button onclick="editarConta()">Editar</button>
+        <button onclick="excluirConta()">Excluir</button>
+      </div>
+    </div>
+  </div>
+  
+
+<script>
+    let contaSelecionadaId = null;
+
+    function abrirModalConta(id, nome) {
+        contaSelecionadaId = id;
+        document.getElementById('modalContaInfo').innerText = `Conta: ${nome}`;
+        document.getElementById('modalConta').style.display = 'block';
+    }
+
+    function fecharModalConta() {
+        document.getElementById('modalConta').style.display = 'none';
+        contaSelecionadaId = null;
+    }
+
+    function editarConta() {
+        alert(`Editar conta ID: ${contaSelecionadaId}`);
+        fecharModalConta();
+    }
+
+    function excluirConta() {
+        const confirmar = confirm("Tem certeza que deseja excluir esta conta?");
+        if (confirmar) {
+            alert(`Excluir conta ID: ${contaSelecionadaId}`);
+            // Aqui você pode fazer fetch para excluir no backend
+        }
+        fecharModalConta();
+    }
+
+</script>

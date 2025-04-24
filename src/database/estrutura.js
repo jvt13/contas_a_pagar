@@ -39,13 +39,15 @@ async function createTablesIfNotExist() {
     });
 
     const createTablesQuery = `
-        CREATE TABLE IF NOT EXISTS public.contas (
+        CREATE TABLE public.contas (
             id SERIAL PRIMARY KEY,
-            nome VARCHAR(255) NOT NULL,
-            vencimento DATE NOT NULL,
-            valor NUMERIC(10,2) NOT NULL,
-            paga BOOLEAN DEFAULT false,
-            data_inclusao TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            nome character varying(255) NOT NULL,
+            vencimento date NOT NULL,
+            valor numeric(10,2) NOT NULL,
+            categoria character varying(50),
+            tipo_cartao character varying(50),
+            paga boolean DEFAULT false,
+            data_inclusao timestamp without time zone DEFAULT CURRENT_TIMESTAMP(0)
         );
 
         CREATE TABLE IF NOT EXISTS public.limites (
@@ -98,7 +100,7 @@ async function createTablesIfNotExist() {
     await createTablesIfNotExist();         // Cria tabelas usando o pool no banco correto
 })();*/
 
-module.exports ={
+module.exports = {
     createDatabaseIfNotExists,
     createTablesIfNotExist
 }

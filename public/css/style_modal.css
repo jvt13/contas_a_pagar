@@ -114,3 +114,59 @@
 .linha-flex button {
   height: 40px; /* Padronizando altura */
 }
+
+
+/*-- Modal ações --*/
+.modal_acao_tab{
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal_acao_tab .modal-conteudo {
+  background-color: #fff;
+  margin: 50% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+}
+
+.modal_acao_tab .modal-botoes {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+.modal_acao_tab .modal-botoes button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.modal_acao_tab .modal-botoes button:first-child {
+  background-color: #007bff;
+  color: white;
+}
+
+.modal_acao_tab .modal-botoes button:last-child {
+  background-color: #dc3545;
+  color: white;
+}
+
+.modal_acao_tab .modal .fechar {
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  font-size: 24px;
+  cursor: pointer;
+}
