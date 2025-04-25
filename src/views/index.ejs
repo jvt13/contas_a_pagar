@@ -16,6 +16,9 @@
 </head>
 
 <script>
+    var function_atualizarSelect = false;
+    var ano_select_ger_limite = 0;
+
     function validaSelector(event) {
         if (event) event.preventDefault(); // Impede o envio padrão do formulário
 
@@ -78,6 +81,12 @@
                 card_total_pendentes.innerHTML = formatValor(total_contas_pendentes);
 
                 try {
+                    if (function_atualizarSelect){
+                        alert('Veio do atualizaSelects:'+ mes + " Mês retorno: "+ mesSelecionado)
+                    }else{
+                        atualizaSelects(anos, anoSelecionado);
+                    }
+                    
                     atualizaOuRecriaCards({
                         mesSelecionado,
                         limiteColor,
@@ -98,6 +107,45 @@
             console.error(error)
         }
     }
+
+    function atualizaSelects(listaDeAnos, anoSelecionado) {
+        const form = document.getElementById('form_selector');
+        const select_ano = form.querySelector('#ano');
+        const mesElement = form.querySelector("#inputMes");
+        const mes = parseInt(mesElement.value)-1; // Pega o valor do mês
+
+        const form_add = document.getElementById('form_addLimite');
+        const select_add = form_add.querySelector('#ano');
+
+        alert('Ano selecionado - Limite: '+ ano_select_ger_limite + ' - Mês: '+ mes)
+
+        function_atualizarSelect = true;
+
+        // Limpa o select
+        select_ano.innerHTML = "";
+
+        if (Array.isArray(listaDeAnos) && listaDeAnos.length > 0) {
+            listaDeAnos.forEach(ano => {
+                const option = document.createElement("option");
+                option.value = ano.ano;
+                option.textContent = ano.ano;
+                console.log("Ano currrente: "+ ano.ano)
+                if (parseInt(ano.ano) === parseInt(ano_select_ger_limite)) {
+                    console.log('Select')
+                    option.selected = true;
+                }
+                select_ano.appendChild(option);
+            });
+        } else {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "Nenhum ano disponível";
+            select_ano.appendChild(option);
+        }
+
+        getDadosTab(ano_select_ger_limite, mes);
+    }
+
 
     function atualizaTabela(data, mesSelecionado) {
         var tabela = document.getElementById('lista');
@@ -213,8 +261,6 @@
         const categoria = form.querySelector('#categoria').value;
         const tipo_cartao = form.querySelector('#tipo_cartao').value;
 
-        alert('Categoria: ' + categoria)
-
         try {
             const response = await fetch('form_conta', {
                 method: 'POST',
@@ -226,6 +272,7 @@
 
             if (sucess) {
                 console.log('Requisição bem sucedida...');
+                showToast("Conta adicionada com sucesso!");
 
                 atualizaOuRecriaCards({
                     mesSelecionado,
@@ -242,6 +289,8 @@
                 form.querySelector('input[name="nome"]').value = "";
                 form.querySelector('input[name="vencimento"]').value = "";
                 form.querySelector('input[name="valor"]').value = "";
+                form.querySelector('#categoria').value = "";
+                form.querySelector('#tipo_cartao').value = "";
 
                 //form.querySelector('input[name="nome"]').focus();
 
@@ -268,8 +317,41 @@
         }
     }
 
-
 </script>
+
+<style>
+    .container-toast {
+        margin: 0 auto;
+        background-color: blue;
+    }
+
+    .container-toast .toast {
+        visibility: hidden;
+        min-width: 250px;
+        background-color: #4CAF50;
+        /* verde padrão de sucesso */
+        color: white;
+        text-align: center;
+        border-radius: 8px;
+        padding: 12px 20px;
+        position: fixed;
+        z-index: 9999;
+        left: 50%;
+        bottom: 30px;
+        transform: translateX(-50%);
+        /* centraliza horizontalmente */
+        font-size: 16px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.5s ease, bottom 0.5s ease;
+    }
+
+    .container-toast .toast.show {
+        visibility: visible;
+        opacity: 1;
+        bottom: 50px;
+    }
+</style>
 
 <body>
 
@@ -319,7 +401,7 @@
                     </div>
 
                     <!-- Formulário para Adicionar Nova Conta -->
-                    <form class="form_add" action="/" method="POST" onsubmit="return validaFormAdd(event)">
+                    <form class="form_add" method="POST" onsubmit="return validaFormAdd(event)">
                         <h2>Adicionar Nova Conta</h2>
                         <div class="card_type">
                             <input type="hidden" name="mes" value="<%= mesSelecionado %>">
@@ -343,7 +425,7 @@
 
                                 <div class="input-group">
                                     <label for="tipoCartao">Tipo de Cartão:</label>
-                                    <select id="tipoCartao" name="tipoCartao">
+                                    <select id="tipo_cartao" name="tipo_cartao">
                                         <option value="">Selecione o Tipo de Cartão</option>
                                         <option value="credito">Cartão de Crédito</option>
                                         <option value="debito">Cartão de Débito</option>
@@ -414,7 +496,8 @@
                             </thead>
                             <tbody>
                                 <% contas.forEach((conta)=> { %>
-                                    <tr onclick="abrirModalConta(<%= conta.id %>, '<%= conta.nome.replace(/'/g, "\\'") %>')">
+                                    <tr onclick="abrirModalConta(<%= conta.id %>, '<%= conta.nome.replace(/'/g, " \\'")
+                                        %>')">
                                         <td>
                                             <%= conta.nome %>
                                         </td>
@@ -428,9 +511,10 @@
                                                 <input type="hidden" name="mes" value="<%= mesSelecionado %>">
                                                 <input type="hidden" name="index" value="<%= conta.id %>">
                                                 <input type="checkbox" name="paga" value="true" <% if (conta.paga) { %>
-                                                checked
-                                                <% } %>
-                                                    onchange="this.form.submit()">
+                                                checked <% } %>
+                                                    onchange="this.form.submit()"
+                                                    onclick="event.stopPropagation()" />
+
                                             </form>
                                         </td>
                                     </tr>
@@ -447,6 +531,7 @@
                     </footer>
     </div>
 
+    <script src="../../public/utils/util.js"></script>
     <script src="../../public/js/index/script.js"></script>
     <script src="../../public/js/index/modal/script.js"></script>
 
@@ -478,6 +563,9 @@
         });
     </script>
 
+    <div id="container-toast" class="container-toast">
+        <div id="toast" class="toast">Dados inseridos com sucesso!</div>
+    </div>
 </body>
 
 </html>

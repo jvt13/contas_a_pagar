@@ -25,19 +25,21 @@ async function enviarPost(event) {
   const mensagem = 'O campo do ano está vazio. Se o ano desejado não estiver na lista, clique no botão ao lado para adicionar um novo ano. Após a ação, uma vez que o mês e o limite estejam preenchidos, clique no botão "Salvar Limite" para finalizar.';
 
   try {
-    
+
     if (ano_select === '' && novo_ano == '') {
-        alert(mensagem);
-        return false;
+      alert(mensagem);
+      return false;
     }
 
-    if(ano_select === ''){
+    if (ano_select === '') {
       ano = novo_ano;
-    }else{
+    } else {
       ano = ano_select;
     }
-    const id = await obterIdLimite(ano, mesNum);
+    ano_select_ger_limite = parseInt(ano);
     
+    const id = await obterIdLimite(ano, mesNum);
+
     if (id) {
       // Se o ID foi encontrado, podemos tentar atualizar o limite.
       await atualizarLimite(ano, mesNum, limite, id);
@@ -46,8 +48,26 @@ async function enviarPost(event) {
       await inserirLimite(ano, mesNum, limite);
     }
 
-    form.querySelector("#limite").value = '';
-    form.querySelector("#limite").value = '';
+    //form.querySelector("#limite").value = '';
+    //form.querySelector("#limite").value = '';
+
+    setTimeout(() => {//Fechar modal
+      fecharModal('modalGerenciarLimite');
+    }, 1000);
+
+    try {
+      const form = document.getElementById('form_selector');
+      const anoElement = form.querySelector("#ano"); // Seleciona o ano dentro do formulário
+      const mesElement = form.querySelector("#inputMes"); // Seleciona o mês dentro do formulário
+
+      const ano = anoElement.value; // Pega o valor do ano
+      const mes = mesElement.value; // Pega o valor do mês
+      console.log('Ano: ' + ano)
+      getDadosTab(ano, mes); //atualiza dados da tela principal.
+    } catch (error) {
+      console.error(error)
+    }
+
   } catch (error) {
     console.error('Erro:', error);
     // Considerar informar o erro de uma forma mais amigável ao usuário.
@@ -89,8 +109,8 @@ async function atualizarLimite(ano, mesNum, limite, id) {
     let { sucess, mensagem } = await response.json();
     if (!sucess) {
       throw new Error('Atualização não foi bem-sucedida.');
-    }else{
-      alert(`Limite do mês ${mesNum} atualizado com sucesso!`);
+    } else {
+      showToast(`Limite do mês ${mesNum} atualizado com sucesso!`)
     }
   } catch (error) {
     console.error('Erro no atualizarLimite:', error);
@@ -114,8 +134,8 @@ async function inserirLimite(ano, mes, limite) {
     let { sucess } = await response.json();
     if (!sucess) {
       throw new Error('Falha ao inserir limite.');
-    }else{
-      alert(`Limite do mês ${mes} inserido com sucesso!`);
+    } else {
+      showToast(`Limite do mês ${mes} inserido com sucesso!`);
     }
   } catch (error) {
     throw new Error('Falha na inserção do limite: ' + error.message);

@@ -220,7 +220,7 @@ const salvarLimite = async (req, res) => {
         return res.status(400).json({ sucess: false, mensagem: 'Parâmetros inválidos.' });
     }
 
-    console.log('Parâmetros recebidos:', { mes, ano, limite, id, tipo });
+    //console.log('Parâmetros recebidos:', { mes, ano, limite, id, tipo });
 
     try {
         if (tipo === 'insert') {
