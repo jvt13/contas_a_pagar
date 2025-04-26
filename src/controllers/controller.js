@@ -5,6 +5,7 @@ const model = require('../database/queries_conta'); // Importa o módulo de cons
 const getDadosConta = async (req, res) => {
     let mesSelecionado = req.body.mes || ""; // Pega o mês como string
     let anoSelecionado = req.body.ano || "";
+    console.log(`--------------------------------Mês selecionado: ${mesSelecionado} - Ano selecionado: ${anoSelecionado}`)
 
     // Define uma variável para armazenar o mês ajustado
     let mesNumero = null;
@@ -260,7 +261,7 @@ const getLimite = async (req, res) => {
         }
 
         console.log('Encontrou limite. Retornando requisição - ' + result.id);
-        return res.json({ sucess: true, id: result.id });
+        return res.json({ success: true, id: result.id });
     } catch (error) {
         console.error(error);
         res.status(500).json({ success: false, mensagem: 'Erro ao processar a requisição' });

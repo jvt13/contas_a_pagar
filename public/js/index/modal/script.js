@@ -21,6 +21,7 @@ async function enviarPost(event) {
   const novo_ano = form.querySelector("#novo_ano").value;
   const anoSelecionado = ano_select.value || novo_ano;
   let mesNum = parseInt(mes) + 1;
+  var ano = 0;
 
   const mensagem = 'O campo do ano está vazio. Se o ano desejado não estiver na lista, clique no botão ao lado para adicionar um novo ano. Após a ação, uma vez que o mês e o limite estejam preenchidos, clique no botão "Salvar Limite" para finalizar.';
 
@@ -37,7 +38,8 @@ async function enviarPost(event) {
       ano = ano_select;
     }
     ano_select_ger_limite = parseInt(ano);
-    
+    mes_select_ger_limite = parseInt(mes);
+
     const id = await obterIdLimite(ano, mesNum);
 
     if (id) {
@@ -52,18 +54,29 @@ async function enviarPost(event) {
     //form.querySelector("#limite").value = '';
 
     setTimeout(() => {//Fechar modal
+      const novoAnoCampo = document.getElementById('novoAnoCampo');
+      novoAnoCampo.style.display = novoAnoCampo.style.display === 'none' ? 'flex' : 'none';
       fecharModal('modalGerenciarLimite');
-    }, 1000);
+    }, 500);
 
     try {
-      const form = document.getElementById('form_selector');
-      const anoElement = form.querySelector("#ano"); // Seleciona o ano dentro do formulário
-      const mesElement = form.querySelector("#inputMes"); // Seleciona o mês dentro do formulário
+      const formSelector = document.getElementById('form_selector');
+      /*formSelector.querySelector('#ano').value = ano;
+      formSelector.querySelector("#inputMes").value = mes;*/
+
+      const anoElement = formSelector.querySelector("#ano"); // Seleciona o ano dentro do formulário
+      const mesElement = formSelector.querySelector("#inputMes"); // Seleciona o mês dentro do formulário
 
       const ano = anoElement.value; // Pega o valor do ano
       const mes = mesElement.value; // Pega o valor do mês
-      console.log('Ano: ' + ano)
-      getDadosTab(ano, mes); //atualiza dados da tela principal.
+      //console.log('Ano: ' + ano)
+
+      form.querySelector("#mes").value = '';
+      form.querySelector("#ano").value = '';
+      form.querySelector("#limite").value = '';
+      form.querySelector("#novo_ano").value = '';
+
+      getDadosTab(ano, mes, true); //atualiza dados da tela principal.
     } catch (error) {
       console.error(error)
     }
@@ -76,20 +89,35 @@ async function enviarPost(event) {
 
 async function obterIdLimite(ano, mesNum) {
   try {
-    let response = await fetch('limit_list', {
+    ano = parseInt(ano);
+    mesNum = parseInt(mesNum);
+
+    // Validação simples antes do envio
+    if (!Number.isInteger(ano) || !Number.isInteger(mesNum)) {
+      throw new Error(`Parâmetros inválidos: ano=${ano}, mes=${mesNum}`);
+    }
+
+    const response = await fetch('limit_list', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ano: ano, mes: mesNum })
     });
 
     if (!response.ok) {
-      throw new Error('Erro ao acessar limit_list');
+      const errorText = await response.text();
+      throw new Error(`Erro HTTP: ${response.status} - ${errorText}`);
     }
 
-    let { sucess, id } = await response.json();
-    return sucess ? id : null; // Retorna `id` se o sucesso for verdadeiro
+    const { success, id } = await response.json();
+
+    if (!success) {
+      console.warn("Requisição respondida com sucesso = false");
+      return null;
+    }
+
+    return id ?? null; // Garante que o retorno seja null se id não existir
   } catch (error) {
-    console.error(error);
+    console.error("Erro na função obterIdLimite:", error);
     throw new Error('Falha na obtenção do ID do limite: ' + error.message);
   }
 }

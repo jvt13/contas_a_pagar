@@ -18,6 +18,7 @@
 <script>
     var function_atualizarSelect = false;
     var ano_select_ger_limite = 0;
+    var mes_select_ger_limite = 0;
 
     function validaSelector(event) {
         if (event) event.preventDefault(); // Impede o envio padrão do formulário
@@ -48,78 +49,73 @@
         return `R$ ${Number(valor || 0).toFixed(2).replace('.', ',')}`;
     }
 
-    async function getDadosTab(ano, mes) {
-        console.log("getDadosTab() Ano:", ano, "Mês:", mes);
+    async function getDadosTab(ano, mes, atualizarSelect = false) {
+        console.log("getDadosTab() Ano:", ano, "Mês:", mes, "Atualizar Select:", atualizarSelect);
 
         const cardLimite = document.getElementById('card_total_limite');
         const cardContas = document.getElementById('card_total_contas');
         const card_total_pagas = document.getElementById('card_total_pagas');
-        var card_total_pendentes = document.getElementById('card_total_pendentes');
+        const card_total_pendentes = document.getElementById('card_total_pendentes');
 
         try {
             const response = await fetch('dados_tab', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ano: ano, mes: mes })
+                body: JSON.stringify({ ano, mes })
             });
 
-
-            const { sucess, contas, total_contas, total_contas_pagas, total_contas_pendentes, total_limite, limiteColor, mesSelecionado, anos, anoSelecionado, error } = await response.json();
+            const {
+                sucess,
+                contas,
+                total_contas,
+                total_contas_pagas,
+                total_contas_pendentes,
+                total_limite,
+                limiteColor,
+                mesSelecionado,
+                anos,
+                anoSelecionado,
+                error
+            } = await response.json();
 
             if (sucess) {
-                console.log(document.getElementById('card_total_limite')); // deve mostrar o elemento ou null
-
-
-                if (cardLimite) {
-                    //const limite = Number(total_limite) || 0;
-                    cardLimite.innerHTML = formatValor(total_limite);
-
-                    //cardLimite.innerHTML = `R$ ${total_limite.toFixed(2).replace('.', ',')}`;
-                }
+                if (cardLimite) cardLimite.innerHTML = formatValor(total_limite);
                 cardContas.innerHTML = formatValor(total_contas);
                 card_total_pagas.innerHTML = formatValor(total_contas_pagas);
                 card_total_pendentes.innerHTML = formatValor(total_contas_pendentes);
 
-                try {
-                    if (function_atualizarSelect){
-                        alert('Veio do atualizaSelects:'+ mes + " Mês retorno: "+ mesSelecionado)
-                    }else{
-                        atualizaSelects(anos, anoSelecionado);
-                    }
-                    
-                    atualizaOuRecriaCards({
-                        mesSelecionado,
-                        limiteColor,
-                        total_limite,
-                        total_contas,
-                        total_contas_pagas,
-                        total_contas_pendentes
-                    });
+                atualizaSelects(anos, anoSelecionado);
+                atualizaOuRecriaCards({
+                    mesSelecionado,
+                    limiteColor,
+                    total_limite,
+                    total_contas,
+                    total_contas_pagas,
+                    total_contas_pendentes
+                });
 
-                    atualizaTabela(contas, mesSelecionado)
-                } catch (error) {
-                    console.error("Erro em uma das funçoes: " + error)
-                }
+                atualizaTabela(contas, mesSelecionado);
             } else {
-                console.error(error)
+                console.error(error);
             }
         } catch (error) {
-            console.error(error)
+            console.error("Erro na getDadosTab:", error);
         }
     }
+
 
     function atualizaSelects(listaDeAnos, anoSelecionado) {
         const form = document.getElementById('form_selector');
         const select_ano = form.querySelector('#ano');
         const mesElement = form.querySelector("#inputMes");
-        const mes = parseInt(mesElement.value)-1; // Pega o valor do mês
+        const mes = parseInt(mesElement.value) - 1; // Pega o valor do mês
 
         const form_add = document.getElementById('form_addLimite');
         const select_add = form_add.querySelector('#ano');
 
-        alert('Ano selecionado - Limite: '+ ano_select_ger_limite + ' - Mês: '+ mes)
-
         function_atualizarSelect = true;
+
+        //alert('Ano selecionado - Limite: ' + ano_select_ger_limite + ' - Mês: ' + mes_select_ger_limite)
 
         // Limpa o select
         select_ano.innerHTML = "";
@@ -129,8 +125,8 @@
                 const option = document.createElement("option");
                 option.value = ano.ano;
                 option.textContent = ano.ano;
-                console.log("Ano currrente: "+ ano.ano)
-                if (parseInt(ano.ano) === parseInt(ano_select_ger_limite)) {
+                console.log("Ano currrente: " + ano.ano)
+                if (parseInt(ano.ano) === parseInt(anoSelecionado)) {
                     console.log('Select')
                     option.selected = true;
                 }
@@ -143,7 +139,7 @@
             select_ano.appendChild(option);
         }
 
-        getDadosTab(ano_select_ger_limite, mes);
+        //getDadosTab(select_ano.value, mesElement.value);
     }
 
 

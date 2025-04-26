@@ -8,11 +8,14 @@ const { format } = require('date-fns');
  * @returns {Promise<Array>} Lista de contas.
  */
 const getContas = async (mes, ano) => {
+    const mesInt = Number.isInteger(parseInt(mes)) ? parseInt(mes) : null;
+    const anoInt = Number.isInteger(parseInt(ano)) ? parseInt(ano) : null;
+
     const result = await pool.query(`
         SELECT * FROM contas
         WHERE ($1::int IS NULL OR EXTRACT(MONTH FROM vencimento) = $1::int)
         AND ($2::int IS NULL OR EXTRACT(YEAR FROM vencimento) = $2::int)
-    `, [mes ? parseInt(mes) : null, ano ? parseInt(ano) : null]);
+    `, [mesInt, anoInt]);
 
     return result.rows.map(conta => ({
         ...conta,
@@ -82,21 +85,37 @@ const getLimiteAll = async (mes, ano) => {
     return 0;
 }
 
-const getLimite = async (mes, ano) => {
-    const query = 'SELECT id, limite FROM public.limites WHERE mes = $1 AND ano = $2 LIMIT 1';
-    const result = await pool.query(query, [mes, ano]);
+const isValidInteger = (val) => {
+    if (typeof val === 'string' || typeof val === 'number') {
+        const parsed = parseInt(val);
+        return !isNaN(parsed) ? parsed : null;
+    }
+    return null;
+};
 
-    console.log('Resultado da consulta:', result.rows); // Logando o resultado da consulta
+const getLimite = async (mes, ano) => {
+    console.log(`Ano: ${ano.ano} Mês: ${mes}`)
+    // Corrigindo a conversão dos valores
+    const mesInt = parseInt(mes);
+    const anoInt = parseInt(ano);
+
+    // Verifica se mesInt ou anoInt são NaN
+    if (isNaN(mesInt) || isNaN(anoInt)) {
+        throw new Error('O mês ou o ano fornecido não são válidos.');
+    }
+
+    const query = 'SELECT id, limite FROM public.limites WHERE mes = $1 AND ano = $2 LIMIT 1';
+    const result = await pool.query(query, [mesInt, anoInt]);
 
     if (result.rows.length > 0) {
-        return { id: result.rows[0].id, limite: result.rows[0].limite }; // Retornando o id juntamente com o limite
+        return { id: result.rows[0].id, limite: result.rows[0].limite };
     }
-    return null; // Retornando null se não encontrado
+    return null;
 };
 
 const insertLimite = async (mes, ano, limite) => {
     const query = 'INSERT INTO public.limites (mes, ano, limite) VALUES ($1, $2, $3) RETURNING id';
-    
+
     console.log(`Mês ${mes}/${ano} limite: ${limite}`)
     try {
         const result = await pool.query(query, [mes, ano, limite]);
