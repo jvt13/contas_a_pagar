@@ -125,9 +125,9 @@
                 const option = document.createElement("option");
                 option.value = ano.ano;
                 option.textContent = ano.ano;
-                console.log("Ano currrente: " + ano.ano)
+                //console.log("Ano currrente: " + ano.ano)
                 if (parseInt(ano.ano) === parseInt(anoSelecionado)) {
-                    console.log('Select')
+                    //console.log('Select')
                     option.selected = true;
                 }
                 select_ano.appendChild(option);
@@ -153,7 +153,7 @@
             const isChecked = data[i].paga ? "checked" : "";
             //console.log('depois cheked')
 
-            tabela.innerHTML += `<tr>
+            tabela.innerHTML += `<tr onclick="abrirModalConta(${data[i].id}, '${data[i].nome.replace(/'/g, "\\'")}')">
                 <td>${data[i].nome}</td>
                 <td>${data[i].vencimento}</td>
                 <td>R$ ${data[i].valor.toFixed(2).replace('.', ',')}</td>
@@ -397,7 +397,7 @@
                     </div>
 
                     <!-- Formulário para Adicionar Nova Conta -->
-                    <form class="form_add" method="POST" onsubmit="return validaFormAdd(event)">
+                    <form id="form_add" class="form_add" method="POST" onsubmit="return validaFormAdd(event)">
                         <h2>Adicionar Nova Conta</h2>
                         <div class="card_type">
                             <input type="hidden" name="mes" value="<%= mesSelecionado %>">
@@ -530,6 +530,7 @@
     <script src="../../public/utils/util.js"></script>
     <script src="../../public/js/index/script.js"></script>
     <script src="../../public/js/index/modal/script.js"></script>
+    <script type="module" src="../../public/js/utils/services.js"></script>
 
     <script>
         if ('serviceWorker' in navigator) {
@@ -562,6 +563,8 @@
     <div id="container-toast" class="container-toast">
         <div id="toast" class="toast">Dados inseridos com sucesso!</div>
     </div>
+
+
 </body>
 
 </html>

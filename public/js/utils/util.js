@@ -7,7 +7,7 @@ function fecharModal(nome){
 }
 
 //Mensagem toast
-function showToast(mensagem = 'Ação realizada com sucesso!') {
+window.showToast = function(mensagem = 'Ação realizada com sucesso!') {
     const toast = document.getElementById("toast");
     toast.textContent = mensagem;
     toast.classList.add("show");
@@ -16,3 +16,12 @@ function showToast(mensagem = 'Ação realizada com sucesso!') {
         toast.classList.remove("show");
     }, 3000); // 3 segundos
 }
+/*function showToast(mensagem = 'Ação realizada com sucesso!') {
+    const toast = document.getElementById("toast");
+    toast.textContent = mensagem;
+    toast.classList.add("show");
+
+    setTimeout(() => {
+        toast.classList.remove("show");
+    }, 3000); // 3 segundos
+}*/

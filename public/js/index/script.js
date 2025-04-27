@@ -30,4 +30,5 @@ window.onclick = function(event) {
     }*/
 };
 
+
 module.exports = {fecharModal}

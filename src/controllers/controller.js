@@ -141,6 +141,15 @@ const addConta = async (req, res) => {
     const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao } = req.body;
 
     try {
+        // posteriormente, fazer essa consulta no banco de dados para verificar se já existe, se existe, atualiza
+        // Se não existe, adiciona a nova conta
+        /*const result = await model.getContas(mes, ano); // Chama a função para obter contas
+
+        if (result) {
+            await model.updateContas(mes, ano, nome, vencimento, valor, categoria, tipo_cartao); // Atualiza a conta se já existir
+            console.log(`Conta ${nome} atualizada com sucesso!!!`);
+            return getDadosConta(req, res); // Chama getContas passando a requisição e resposta
+        }*/
         await model.addConta({ nome, vencimento, valor, categoria, tipo_cartao }); // Adiciona a nova conta
         console.log(`Conta ${nome} inserido com sucesso!!!`)
 
@@ -268,6 +277,43 @@ const getLimite = async (req, res) => {
     }
 };
 
+const excluirConta = async (req, res) => {
+    const id = req.params.id; // ID da conta a ser excluída
+    console.log('ID recebido para exclusão:', id);
+
+    try {
+        const response = await model.excluirConta(id); // Chama a função para excluir a conta
+
+        if (!response) {
+            console.log('Nenhuma conta excluída, ID não encontrado:', id);
+            return res.status(404).json({ success: false, mensagem: 'Conta não encontrada.' });
+        }
+        console.log(`Conta ${id} excluída com sucesso!`);
+        res.json({ success: true, mensagem: 'Conta excluída com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao excluir conta:', error);
+        res.status(500).json({ success: false, mensagem: 'Erro ao excluir conta.' });
+    }
+}
+
+const getContaID = async (req, res) => {
+    const id = req.params.id;
+
+    try {
+        const response = await model.getContaID(id); // Chama a função para excluir a conta
+
+        if (!response) {
+            console.log('Nenhuma conta encontrado:', id);
+            return res.status(404).json({ success: false, mensagem: 'Conta não encontrada.' });
+        }
+        console.log(`Conta ${id} encontrada com sucesso!`);
+        res.json({ success: true, mensagem: 'Conta encontrada com sucesso!', conta: response });
+    } catch (error) {
+        console.error('Erro ao excluir conta:', error);
+        res.status(500).json({ success: false, mensagem: 'Erro ao excluir conta.' });
+    }
+}
+
 // Controladores exportados para uso em rotas
 module.exports = {
     home: getContas,
@@ -278,7 +324,9 @@ module.exports = {
     gerenciarLimite,
     salvarLimite,
     getLimite,
-    getDadosConta
+    getDadosConta,
+    excluirConta,
+    getContaID
 };
 
 

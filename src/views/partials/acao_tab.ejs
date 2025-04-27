@@ -1,17 +1,84 @@
 <!-- Modal de Ações da Conta -->
 <div id="modalConta" class="modal_acao_tab" style="display: none;">
     <div class="modal-conteudo">
-      <span class="fechar" onclick="fecharModalConta()">&times;</span>
-      <h2 id="modalContaTitulo">Conta Selecionada</h2>
-      <p id="modalContaInfo"></p>
-  
-      <div class="modal-botoes">
-        <button onclick="editarConta()">Editar</button>
-        <button onclick="excluirConta()">Excluir</button>
-      </div>
+        <span class="fechar" onclick="fecharModalConta()">&times;</span>
+        <h2 id="modalContaTitulo">Conta Selecionada</h2>
+        <p id="modalContaInfo"></p>
+
+        <div class="modal-botoes">
+            <button onclick="editarConta()">Editar</button>
+            <button onclick="excluirConta(contaSelecionadaId)">Excluir</button>
+        </div>
     </div>
-  </div>
-  
+</div>
+
+<script type="module">
+    import {postDados, putDados, getDados, deleteDados } from '../../public/js/utils/services.js';
+
+    // toastModule.js
+    export function showToast(mensagem = 'Ação realizada com sucesso!') {
+        const toast = document.getElementById("toast");
+        toast.textContent = mensagem;
+        toast.classList.add("show");
+
+        setTimeout(() => {
+            toast.classList.remove("show");
+        }, 3000);
+    }
+
+    window.getContasID = async function (url, id) {
+        try {
+            const response = await getDados(url + id);
+            if (response.status === 200) {
+                const data = await response.json();
+                return data;
+            } else {
+                console.error('Erro ao buscar dados:', response.statusText);
+            }
+        } catch (error) {
+            console.error('Erro ao buscar dados:', error);
+        }
+    };
+    
+    window.updateDados = async function (url, id, data) {
+        try {
+            const response = await putDados(url + id, data);
+            if (response.status === 200) {
+                showToast('Conta atualizada com sucesso!');
+                // Atualiza a tabela
+                const form = document.getElementById('form_selector');
+                const ano = form.querySelector("#ano").value;
+                const mes = form.querySelector("#inputMes").value;
+                getDadosTab(ano, mes);
+            } else {
+                showToast('Erro ao atualizar a conta.');
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar a conta:', error);
+            showToast('Erro ao atualizar a conta.');
+        }
+    };
+
+    // Exporta a função para o escopo global
+    window.excluirContaModule = async function (url, id) {
+        if (!confirm(`Tem certeza que deseja excluir esta conta, com o ID ${id}?`)) {
+            return;
+        }
+
+        try {
+            await deleteDados(url + id);
+            showToast('Conta excluída com sucesso!');
+            // Atualiza a tabela
+            const form = document.getElementById('form_selector');
+            const ano = form.querySelector("#ano").value;
+            const mes = form.querySelector("#inputMes").value;
+            getDadosTab(ano, mes);
+        } catch (error) {
+            console.error('Erro ao excluir a conta:', error);
+            showToast('Erro ao excluir a conta.');
+        }
+    };
+</script>
 
 <script>
     let contaSelecionadaId = null;
@@ -27,17 +94,30 @@
         contaSelecionadaId = null;
     }
 
-    function editarConta() {
-        alert(`Editar conta ID: ${contaSelecionadaId}`);
+    async function editarConta() {
+        const form_add = document.getElementById('form_add');
+        const result = await getContasID('/get_conta_id/', contaSelecionadaId);
+        console.log(result);
+        form_add.querySelector('input[name="nome"]').value = result.nome;
+        form_add.querySelector('input[name="vencimento"]').value = result.vencimento;
+        form_add.querySelector('input[name="valor"]').value = result.valor;
+        form_add.querySelector('select[name="categoria"]').value = result.categoria;
+        form_add.querySelector('select[name="tipo_cartao"]').value = result.tipo_cartao;
+
+        /*const dados = {
+            nome: form_add.querySelector('input[name="nome"]').value,
+            vencimento: form_add.querySelector('input[name="vencimento"]').value,
+            valor: form_add.querySelector('input[name="valor"]').value,
+            categoria: form_add.querySelector('select[name="categoria"]').value,
+            tipo_cartao: form_add.querySelector('select[name="tipo_cartao"]').value,
+        };
+        console.log(dados);*/
+        //await updateDados('/update_conta/', contaSelecionadaId, dados);
         fecharModalConta();
     }
 
-    function excluirConta() {
-        const confirmar = confirm("Tem certeza que deseja excluir esta conta?");
-        if (confirmar) {
-            alert(`Excluir conta ID: ${contaSelecionadaId}`);
-            // Aqui você pode fazer fetch para excluir no backend
-        }
+    async function excluirConta(id) {
+        await excluirContaModule('/delete_conta/', `${id}`);
         fecharModalConta();
     }
 

@@ -148,6 +148,26 @@ const getAnos = async () => {
     return result.rows; // Certifique-se que isso retorna um array
 };
 
+const excluirConta = async (id) => {
+    const query = 'DELETE FROM contas WHERE id = $1';
+    const result = await pool.query(query, [id]);
+    if (result.rowCount > 0) {
+        return true; // Conta excluída com sucesso
+    } else {
+        return false; // Nenhuma conta excluída (ID não encontrado)
+    }
+};
+
+const getContaID = async (id) => {
+    const query = 'SELECT * FROM contas WHERE id = $1';
+    const result = await pool.query(query, [id]);
+    if (result.rows.length > 0) {
+        return result.rows[0]; // Retorna a conta encontrada
+    } else {
+        return null; // Nenhuma conta encontrada com o ID fornecido
+    }
+};
+
 
 module.exports = {
     getContas,
@@ -159,5 +179,7 @@ module.exports = {
     updateLimite,
     getLimite,
     getLimiteAll,
-    getAnos
+    getAnos,
+    excluirConta,
+    getContaID
 };
