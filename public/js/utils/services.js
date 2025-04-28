@@ -59,8 +59,18 @@ export async function putDados(url, dados) {
 
 // Função específica para fazer requisições GET
 export async function getDados(url) {
-    // Chama a função request usando método padrão GET
-    return await request(url);
+    try {
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return response; // Retorna o objeto Response completo
+    } catch (error) {
+        console.error('Erro no getDados:', error);
+        throw error;
+    }
 }
 
 export async function deleteDados(url) {

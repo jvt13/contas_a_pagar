@@ -35,14 +35,14 @@ const getDadosConta = async (req, res) => {
         console.log('Parametro para o limite: ' + mesNumero + '/' + anoSelecionado)
         let limite_gastos = await model.getLimite(mesNumero, anoSelecionado);
 
-        if(!limite_gastos){
+        if (!limite_gastos) {
             limite_gastos = 0;
-        }else{
+        } else {
             limite_gastos = limite_gastos.limite
             console.log('Limite: ' + limite_gastos)
         }
 
-        
+
         console.log(`Ano selecionado: ${anoSelecionado} / Mês selecionado: ${mesSelecionado}`);
         const limiteColor = (mesSelecionado !== '' && mesSelecionado >= 0 && mesSelecionado <= 11)
             ? obterCor(totalContas, limite_gastos)  // Chama a função se um mês específico foi selecionado
@@ -96,11 +96,11 @@ const getContas = async (req, res) => {
         // Calcular total de contas pendentes
         const totalContasPendentes = contas.reduce((total, conta) => total + (!conta.paga ? conta.valor : 0), 0) || 0;
 
-        let limite_gastos = await model.getLimite((mesSelecionado+1), anoSelecionado);
+        let limite_gastos = await model.getLimite((mesSelecionado + 1), anoSelecionado);
 
-        if(!limite_gastos){
+        if (!limite_gastos) {
             limite_gastos = 0;
-        }else{
+        } else {
             limite_gastos = limite_gastos.limite
             console.log('Limite: ' + limite_gastos)
         }
@@ -264,7 +264,7 @@ const getLimite = async (req, res) => {
     try {
         const result = await model.getLimite(mes, ano);
 
-        if (!result) { 
+        if (!result) {
             console.log('Limite não encontrado, retornando id 0.');
             return res.json({ success: true, id: 0 }); // Retornando id 0 em vez de um erro
         }
@@ -298,21 +298,29 @@ const excluirConta = async (req, res) => {
 
 const getContaID = async (req, res) => {
     const id = req.params.id;
-
     try {
-        const response = await model.getContaID(id); // Chama a função para excluir a conta
+        const conta = await model.getContaID(id);
 
-        if (!response) {
-            console.log('Nenhuma conta encontrado:', id);
-            return res.status(404).json({ success: false, mensagem: 'Conta não encontrada.' });
+        if (!conta) {
+            return res.status(404).json({
+                success: false,
+                message: 'Conta não encontrada'
+            });
         }
-        console.log(`Conta ${id} encontrada com sucesso!`);
-        res.json({ success: true, mensagem: 'Conta encontrada com sucesso!', conta: response });
+
+        // Retorna em um formato consistente
+        res.json({
+            success: true,
+            data: conta // Encapsula a conta em um campo 'data'
+        });
     } catch (error) {
-        console.error('Erro ao excluir conta:', error);
-        res.status(500).json({ success: false, mensagem: 'Erro ao excluir conta.' });
+        console.error('Erro no backend:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno no servidor'
+        });
     }
-}
+};
 
 // Controladores exportados para uso em rotas
 module.exports = {

@@ -13,7 +13,7 @@
 </div>
 
 <script type="module">
-    import {postDados, putDados, getDados, deleteDados } from '../../public/js/utils/services.js';
+    import { postDados, putDados, getDados, deleteDados } from '../../public/js/utils/services.js';
 
     // toastModule.js
     export function showToast(mensagem = 'Ação realizada com sucesso!') {
@@ -28,18 +28,22 @@
 
     window.getContasID = async function (url, id) {
         try {
+            console.log(`Buscando conta ID: ${id}`);
             const response = await getDados(url + id);
+
+            console.log('Status:', response.status);
             if (response.status === 200) {
                 const data = await response.json();
+                console.log('Dados recebidos:', data);
                 return data;
-            } else {
-                console.error('Erro ao buscar dados:', response.statusText);
             }
+            throw new Error(`Erro HTTP: ${response.status}`);
         } catch (error) {
             console.error('Erro ao buscar dados:', error);
+            throw error; // Propaga o erro para ser tratado por quem chamou
         }
     };
-    
+
     window.updateDados = async function (url, id, data) {
         try {
             const response = await putDados(url + id, data);
@@ -95,25 +99,28 @@
     }
 
     async function editarConta() {
-        const form_add = document.getElementById('form_add');
-        const result = await getContasID('/get_conta_id/', contaSelecionadaId);
-        console.log(result);
-        form_add.querySelector('input[name="nome"]').value = result.nome;
-        form_add.querySelector('input[name="vencimento"]').value = result.vencimento;
-        form_add.querySelector('input[name="valor"]').value = result.valor;
-        form_add.querySelector('select[name="categoria"]').value = result.categoria;
-        form_add.querySelector('select[name="tipo_cartao"]').value = result.tipo_cartao;
+        try {
+            const form_add = document.getElementById('form_add');
+            const result = await getContasID('/get_conta_id/', contaSelecionadaId);
 
-        /*const dados = {
-            nome: form_add.querySelector('input[name="nome"]').value,
-            vencimento: form_add.querySelector('input[name="vencimento"]').value,
-            valor: form_add.querySelector('input[name="valor"]').value,
-            categoria: form_add.querySelector('select[name="categoria"]').value,
-            tipo_cartao: form_add.querySelector('select[name="tipo_cartao"]').value,
-        };
-        console.log(dados);*/
-        //await updateDados('/update_conta/', contaSelecionadaId, dados);
-        fecharModalConta();
+            if (!result.success) {
+                throw new Error(result.message || 'Erro ao buscar conta');
+            }
+
+            const conta = result.data; // Acessa os dados dentro do campo data
+
+            // Preenche o formulário com valores padrão caso algum seja undefined
+            form_add.querySelector('input[name="nome"]').value = conta.nome || '';
+            form_add.querySelector('input[name="vencimento"]').value = conta.vencimento || '';
+            form_add.querySelector('input[name="valor"]').value = conta.valor || 0;
+            form_add.querySelector('select[name="categoria"]').value = conta.categoria || '';
+            form_add.querySelector('select[name="tipo_cartao"]').value = conta.tipo_cartao || '';
+
+            fecharModalConta();
+        } catch (error) {
+            console.error('Erro ao editar conta:', error);
+            showToast(`Erro: ${error.message}`);
+        }
     }
 
     async function excluirConta(id) {

@@ -29,6 +29,3 @@ window.onclick = function(event) {
         navbarNav.classList.toggle('none');
     }*/
 };
-
-
-module.exports = {fecharModal}

@@ -159,9 +159,13 @@ const excluirConta = async (id) => {
 };
 
 const getContaID = async (id) => {
-    const query = 'SELECT * FROM contas WHERE id = $1';
+    const query = `SELECT id, nome, TO_CHAR(vencimento, 'YYYY-MM-DD') as vencimento, valor, categoria, tipo_cartao 
+                    FROM contas 
+                    WHERE id = $1;`;
     const result = await pool.query(query, [id]);
+    console.log('Resultado da consulta:', result.rows.length);
     if (result.rows.length > 0) {
+        console.log('Conta encontrada:', result.rows[0].nome);
         return result.rows[0]; // Retorna a conta encontrada
     } else {
         return null; // Nenhuma conta encontrada com o ID fornecido
