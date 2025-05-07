@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/public/css/style.css">
+    <link rel="stylesheet" href="/public/css/modal.css" />
     <link rel="stylesheet" href="/public/css/style_modal.css" />
     <!-- flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -79,7 +80,7 @@
             } = await response.json();
 
             if (sucess) {
-                if (cardLimite) cardLimite.innerHTML = formatValor(total_limite);
+                if (cardLimite) cardLimite.innerHTML = total_limite;
                 cardContas.innerHTML = formatValor(total_contas);
                 card_total_pagas.innerHTML = formatValor(total_contas_pagas);
                 card_total_pendentes.innerHTML = formatValor(total_contas_pendentes);
@@ -356,6 +357,8 @@
 
         <!-- Inclusão do Menu -->
         <%- include('menu') %>
+        <%- include('partials/gerenciar_cartao') %>
+        <%- include('partials/config') %>
 
             <!-- Modal -->
             <%- include('partials/gerenciar_limite') %>
@@ -440,7 +443,7 @@
 
                                 <div class="input-group">
                                     <label for="valor">Valor da Conta</label>
-                                    <input type="text" name="valor" placeholder="Valor" required>
+                                    <input id="form-add-limite" type="text" name="valor" placeholder="Valor" required>
                                 </div>
                             </div>
 
@@ -527,10 +530,11 @@
                     </footer>
     </div>
 
-    <script src="../../public/js/utils/util.js"></script>
-    <script src="../../public/js/index/script.js"></script>
-    <script src="../../public/js/index/modal/script.js"></script>
-    <script type="module" src="../../public/js/utils/services.js"></script>
+    <script src="/public/js/utils/util.js"></script>
+    <script src="/public/js/index/script.js"></script>
+    <script src="/public/js/index/modal/script.js"></script>
+    <script type="module" src="/public/js/index/modal/script_config.js"></script>
+    <script type="module" src="/public/js/utils/services.js"></script>
 
     <script>
         if ('serviceWorker' in navigator) {

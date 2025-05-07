@@ -1,172 +1,162 @@
-/* Modal overlay */
-/* Modal overlay */
-.modal {
-  position: fixed;
-  z-index: 999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+/* Estrutura geral do modal de cartão */
+.modal-cartao {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    overflow-y: auto;
+    padding: 20px;
 }
 
-/* Modal content */
-.modal-conteudo {
-  background-color: #fff;
-  padding: 30px 25px;
-  border-radius: 10px;
-  width: 100%;
-  max-width: 450px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  position: relative;
+/* Conteúdo do modal */
+.modal-cartao__content {
+    background: #fff;
+    width: 100%;
+    max-width: 500px;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+    box-sizing: border-box;
 }
 
-/* Close button */
-.fechar {
-  color: #aaa;
-  font-size: 28px;
-  font-weight: bold;
-  position: absolute;
-  top: 12px;
-  right: 18px;
-  cursor: pointer;
+/* Botão de fechar */
+.modal-cartao__close {
+    float: right;
+    font-size: 1.5rem;
+    cursor: pointer;
 }
 
-.fechar:hover {
-  color: #333;
+/* Título */
+.modal-cartao__title {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 1.4rem;
 }
 
-/* Title */
-.modal-conteudo h2 {
-  margin-top: 0;
-  color: #5397e0;
-  font-size: 22px;
-  margin-bottom: 20px;
+/* Formulário */
+.modal-cartao__form {
+    margin-top: 20px;
 }
 
-/* Labels and inputs */
-.modal-conteudo label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-  color: #444;
+.modal-cartao__label {
+    display: block;
+    margin-top: 12px;
+    font-size: 0.95rem;
+    font-weight: 500;
 }
 
-.modal-conteudo select,
-.modal-conteudo input[type="text"],
-.modal-conteudo input[type="number"],
-.linha-flex select,
-.linha-flex input[type="number"],
-.linha-flex button {
-  width: 100%;
-  padding: 10px 12px;
-  margin-bottom: 18px; /* este valor pode ser ajustado se necessário */
-  box-sizing: border-box;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-  transition: border 0.3s;
+.modal-cartao__input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 6px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 1rem;
+    box-sizing: border-box;
 }
 
-.modal-conteudo select:focus,
-.modal-conteudo input[type="text"]:focus,
-.modal-conteudo input[type="number"]:focus {
-  border-color: #5397e0;
-  outline: none;
+.modal-cartao__button {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.2s ease;
 }
 
-/* Submit button */
-.modal-conteudo button {
-  background-color: #5397e0;
-  color: white;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  cursor: pointer;
-  width: 100%;
-  transition: background-color 0.3s ease;
+.modal-cartao__button:hover {
+    background-color: #45a049;
 }
 
-.modal-conteudo button:hover {
-  background-color: #4081c4;
+/* Botões de ação */
+.modal-cartao__button-edit,
+.modal-cartao__button-delete {
+    margin: 2px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 }
 
-/* Alinhamento da linha flex */
-.linha-flex {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
+.modal-cartao__button-edit {
+    background-color: #007bff;
+    color: white;
 }
 
-.linha-flex label {
-  margin-right: 10px;
+.modal-cartao__button-edit:hover {
+    background-color: #0056b3;
 }
 
-.linha-flex select,
-.linha-flex input[type="number"],
-.linha-flex button {
-  height: 40px; /* Padronizando altura */
+.modal-cartao__button-delete {
+    background-color: #dc3545;
+    color: white;
 }
 
-
-/*-- Modal ações --*/
-.modal_acao_tab{
-  display: none;
-  position: fixed;
-  z-index: 999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0, 0, 0, 0.5);
+.modal-cartao__button-delete:hover {
+    background-color: #c82333;
 }
 
-.modal_acao_tab .modal-conteudo {
-  background-color: #fff;
-  margin: 50% auto;
-  padding: 20px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-  position: relative;
+/* Tabela */
+.modal-cartao__table-container {
+    margin-top: 25px;
+    overflow-x: auto;
 }
 
-.modal_acao_tab .modal-botoes {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 20px;
+.modal-cartao__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
 }
 
-.modal_acao_tab .modal-botoes button {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: bold;
+.modal-cartao__table th,
+.modal-cartao__table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+    white-space: nowrap;
 }
 
-.modal_acao_tab .modal-botoes button:first-child {
-  background-color: #007bff;
-  color: white;
+.modal-cartao__table th {
+    background-color: #f2f2f2;
 }
 
-.modal_acao_tab .modal-botoes button:last-child {
-  background-color: #dc3545;
-  color: white;
-}
+/* Responsividade */
+@media (max-width: 720px) {
+    .modal-cartao__content {
+        padding: 15px;
+    }
 
-.modal_acao_tab .modal .fechar {
-  position: absolute;
-  right: 10px;
-  top: 5px;
-  font-size: 24px;
-  cursor: pointer;
+    .modal-cartao__button {
+        font-size: 0.95rem;
+        padding: 10px;
+    }
+
+    .modal-cartao__input {
+        font-size: 0.95rem;
+    }
+
+    .modal-cartao__table th,
+    .modal-cartao__table td {
+        font-size: 0.85rem;
+        padding: 8px;
+    }
+
+    .modal-cartao__button-edit,
+    .modal-cartao__button-delete {
+        width: 100%;
+        margin: 2px 0;
+        padding: 8px;
+        font-size: 0.9rem;
+    }
 }
+  

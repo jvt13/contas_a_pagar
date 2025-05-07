@@ -1,31 +1,23 @@
 // script.js
 
-// Função para alternar a exibição do menu
-function toggleMenu() {
-    const navbarNav = document.querySelector('.navbar-nav');
-    navbarNav.classList.toggle('show'); // Alterna a classe 'show'
-}
+const form_limite = document.getElementById("form-add-limite");
 
-/*document.getElementById('abrirModal').onclick = function() {
-    document.getElementById('modalGerenciarLimite').style.display = 'flex'; // Mostra o modal
-};
+form_limite.addEventListener("input", function () {
+    let valor = this.value.replace(/\D/g, ""); // remove tudo que não for número
+    if (valor === "") return;
 
-document.getElementById('fecharModal').onclick = function() {
-    //document.getElementById('modalGerenciarLimite').style.display = 'none'; // Oculta o modal
-    fecharModal('modalGerenciarLimite');
-};*/
+    valor = parseInt(valor, 10) / 100; // converte para decimal
 
-// Fecha o modal se o usuário clicar fora da área do modal
-window.onclick = function(event) {
-    const modal = document.getElementById('modalGerenciarLimite');
-    //const navbarNav = document.querySelector('.navbar-nav');
+    // Formata para moeda brasileira com separadores corretos
+    this.value = new Intl.NumberFormat('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+    }).format(valor);
+});
 
-
-    if (event.target === modal) {
-        modal.style.display = 'none';
-    }
-
-    /*if (event.target === navbarNav){
-        navbarNav.classList.toggle('none');
-    }*/
-};
+// Remove o "R$" para envio ao backend
+form_limite.addEventListener("blur", function () {
+    //this.value = this.value.replace("R$ ", "");
+    this.value = this.value.replace(/[R$\s.]/g, '') // remove "R$", espaços e pontos de milhar
+        .replace(',', '.')      // troca vírgula por ponto
+})

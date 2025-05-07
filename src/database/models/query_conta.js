@@ -1,6 +1,7 @@
 // database/queries_contas.js
-const pool = require('./conexao'); // Importa a conexão com o banco
+const pool = require('../conexao'); // Importa a conexão com o banco
 const { format } = require('date-fns');
+const {formatarParaBRL} = require('../../utils/util'); // Importa funções utilitárias
 
 /**
  * Função para obter todas as contas do banco de dados.

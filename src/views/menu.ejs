@@ -1,4 +1,8 @@
 <!-- menu.ejs -->
+<script type="module">
+    import { abrirModal } from '../../public/js/utils/util.js';
+    window.abrirModal = abrirModal;
+</script>
 <div class="container-menu">
     <nav class="navbar">
         <a class="navbar-brand" href="#">Menu</a>
@@ -11,11 +15,14 @@
             <li><a href="./">Home</a></li>
             <li><a href="/contas_pagas">Contas Pagas</a></li>
             <li><a href="/contas_pendentes">Contas Pendentes</a></li>
+            <li><a href="">Gerenciar limite</a></li>
+            <li><a href="javascript:void(0);" onclick="abrirModal('modal-cadastro-cartao')">Gerenciar cartões</a></li>
         </ul>
+
     </nav>
 
     <!-- Botão para abrir o modal -->
-    <button id="abrirModal" onclick="abrirModal('modalGerenciarLimite')">
+    <button id="abrirModal" onclick="abrirModal('modal-config-opcoes')">
         <img src="../../public/icons/settings_48x48.png" alt="Gerenciar Limite" style="width: 24px; height: 24px;">
     </button>
 </div>

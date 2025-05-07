@@ -1,6 +1,8 @@
 const { parseISO, format } = require('date-fns');
-const model = require('../database/queries_conta'); // Importa o módulo de consultas
+const model = require('../database/models/query_conta'); // Importa o módulo de consultas
+const model_config = require('../database/models/query_config'); // Importa o módulo de consultas
 //const pool = require('../database/conexao');
+const { formatarParaBRL } = require('../utils/util'); // Importa funções utilitárias
 
 const getDadosConta = async (req, res) => {
     let mesSelecionado = req.body.mes || ""; // Pega o mês como string
@@ -322,6 +324,79 @@ const getContaID = async (req, res) => {
     }
 };
 
+const addCartao = async (req, res) => {
+    const { nome, vencimento, dia_util } = req.body;
+    console.log(`addCartao() parametros: ${nome}/${vencimento}/${dia_util}`);
+
+    try {
+        const result = await model_config.insert(nome, vencimento, dia_util);
+        console.log('Cartão inserido:', result);
+        return res.json({ sucess: true, mensagem: `Cartão ${nome} inserido com sucesso!` });
+    } catch (error) {
+        console.error('Erro ao inserir cartão:', error);
+        return res.status(500).json({ sucess: false, mensagem: 'Erro ao inserir cartão: ' + error.message });
+    }
+}
+
+const getCartoes = async (req, res) => {
+    const cartoes = await model_config.selectAll();
+    res.json({ sucess: true, data: cartoes });
+}
+
+const excluirCartao = async (req, res) => {
+    const id = req.params.id;
+    console.log('ID recebido para exclusão:', id);
+
+    try {
+        const response = await model_config.deleteId(id);
+        console.log('Resposta da exclusão:', response);
+        res.json({ sucess: true, mensagem: 'Cartão excluído com sucesso!' });
+    } catch (error) {
+        console.error('Erro ao excluir cartão:', error);
+        res.status(500).json({ sucess: false, mensagem: 'Erro ao excluir cartão: ' + error.message });
+    }
+}
+
+const getCartaoID = async (req, res) => {
+    const id = req.params.id;
+    try {
+        const cartao = await model_config.selectId(id);
+
+        if (!cartao) {
+            return res.status(404).json({
+                success: false,
+                message: 'Cartão não encontrado'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: cartao
+        });
+    } catch (error) {
+        console.error('Erro no backend:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno no servidor'
+        });
+    }
+};
+
+const updateCartao = async (req, res) => {
+    const id = req.params.id;
+    const { nome, vencimento, dia_util } = req.body;
+    console.log(`updateCartao() parametros: ${id}/${nome}/${vencimento}/${dia_util}`);
+
+    try {
+        const result = await model_config.update(id, nome, vencimento, dia_util);
+        console.log('Cartão atualizado:', result);
+        return res.json({ sucess: true, mensagem: `Cartão ${nome} atualizado com sucesso!` });
+    } catch (error) {
+        console.error('Erro ao atualizar cartão:', error);
+        return res.status(500).json({ sucess: false, mensagem: 'Erro ao atualizar cartão: ' + error.message });
+    }
+};
+
 // Controladores exportados para uso em rotas
 module.exports = {
     home: getContas,
@@ -334,7 +409,12 @@ module.exports = {
     getLimite,
     getDadosConta,
     excluirConta,
-    getContaID
+    getContaID,
+    addCartao,
+    getCartoes,
+    excluirCartao,
+    getCartaoID,
+    updateCartao
 };
 
 

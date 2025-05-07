@@ -1,0 +1,364 @@
+/*-------- Modal overlay --------*/
+.modal {
+    position: fixed;
+    z-index: 999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  /* Modal content */
+  .modal-conteudo {
+    background-color: #fff;
+    padding: 30px 25px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    position: relative;
+  }
+  
+  /* Close button */
+  .fechar {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 12px;
+    right: 18px;
+    cursor: pointer;
+  }
+  
+  .fechar:hover {
+    color: #333;
+  }
+  
+  /* Title */
+  .modal-conteudo h2 {
+    margin-top: 0;
+    color: #5397e0;
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+  
+  /* Labels and inputs */
+  .modal-conteudo label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #444;
+  }
+  
+  .modal-conteudo select,
+  .modal-conteudo input[type="text"],
+  .modal-conteudo input[type="number"],
+  .linha-flex select,
+  .linha-flex input[type="number"],
+  .linha-flex button {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 18px; /* este valor pode ser ajustado se necessário */
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 15px;
+    transition: border 0.3s;
+  }
+  
+  .modal-conteudo select:focus,
+  .modal-conteudo input[type="text"]:focus,
+  .modal-conteudo input[type="number"]:focus {
+    border-color: #5397e0;
+    outline: none;
+  }
+  
+  /* Submit button */
+  .modal-conteudo button {
+    background-color: #5397e0;
+    color: white;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.3s ease;
+  }
+  
+  .modal-conteudo button:hover {
+    background-color: #4081c4;
+  }
+  
+  /* Alinhamento da linha flex */
+  .linha-flex {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .linha-flex label {
+    margin-right: 10px;
+  }
+  
+  .linha-flex select,
+  .linha-flex input[type="number"],
+  .linha-flex button {
+    height: 40px; /* Padronizando altura */
+  }
+  
+  
+  /*-- Modal ações --*/
+  .modal_acao_tab{
+    display: none;
+    position: fixed;
+    z-index: 999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  
+  .modal_acao_tab .modal-conteudo {
+    background-color: #fff;
+    margin: 50% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    position: relative;
+  }
+  
+  .modal_acao_tab .modal-botoes {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
+  }
+  
+  .modal_acao_tab .modal-botoes button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+  }
+  
+  .modal_acao_tab .modal-botoes button:first-child {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .modal_acao_tab .modal-botoes button:last-child {
+    background-color: #dc3545;
+    color: white;
+  }
+  
+  .modal_acao_tab .modal .fechar {
+    position: absolute;
+    right: 10px;
+    top: 5px;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  
+
+/*-------- Modal de Gerenciar Limite --------*/
+.modal-style {
+    display: none; 
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+    overflow: auto;
+}
+
+.modal-content-style {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 40%;
+    border-radius: 8px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+h2 {
+    color: #007bff; /* Mesma cor que o título do modal de Gerenciar Limite */
+    text-align: center;
+}
+
+input[type="text"], input[type="date"], input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.btn-style {
+    width: 100%;
+    background-color: #007bff;
+    color: white;
+    padding: 14px 20px;
+    margin: 8px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+}
+
+.btn-style:hover {
+    background-color: #0056b3;
+}
+
+/*-------- Modal config opções --------*/
+.modal-style {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-content-style {
+    background-color: #ffffff;
+    margin: 15% auto;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    animation: slideIn 0.3s ease-in-out;
+}
+
+.modal-content-style h2 {
+    color: #333;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+.close {
+    position: absolute;
+    right: 1.5rem;
+    top: 1rem;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.close:hover {
+    color: #333;
+}
+
+.btn-style {
+    display: block;
+    width: 100%;
+    padding: 1rem;
+    margin: 0.8rem 0;
+    border: none;
+    border-radius: 8px;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.btn-style:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-style:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive adjustments */
+@media screen and (max-width: 768px) {
+    .modal-content-style {
+        margin: 20% auto;
+        padding: 1.5rem;
+        width: 85%;
+    }
+
+    .btn-style {
+        padding: 0.9rem;
+        font-size: 0.95rem;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .modal-content-style {
+        margin: 25% auto;
+        padding: 1.2rem;
+        width: 90%;
+    }
+
+    .modal-content-style h2 {
+        font-size: 1.3rem;
+    }
+
+    .btn-style {
+        padding: 0.8rem;
+        font-size: 0.9rem;
+    }
+} 
