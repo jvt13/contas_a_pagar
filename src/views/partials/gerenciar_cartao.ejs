@@ -4,18 +4,32 @@
     <div class="modal-cartao__content">
         <span class="modal-cartao__close" id="fechar-modal-cartao">&times;</span>
         <h2 class="modal-cartao__title">Gerenciar Cartão</h2>
-        
+
         <!-- Formulário de Cadastro -->
         <form id="form-cadastro-cartao" class="modal-cartao__form">
             <label class="modal-cartao__label" for="nome_cartao">Nome do Cartão:</label>
-            <input class="modal-cartao__input" type="text" id="nome_cartao" placeholder="Digite o nome do cartão" required>
-            
-            <label class="modal-cartao__label" for="vencimento">Vencimento:</label>
-            <input class="modal-cartao__input" type="number" id="vencimento" min="1" max="31" placeholder="Digite o dia do vencimento" required>
-            
-            <label class="modal-cartao__label" for="dia_util">Dia Útil:</label>
-            <input class="modal-cartao__input" type="number" id="dia_util" min="1" max="31" placeholder="Digite o dia útil" required>
-            
+            <input class="modal-cartao__input" type="text" id="nome_cartao" placeholder="Digite o nome do cartão"
+                required>
+
+            <label class="modal-cartao__label" for="credito_debito">Crédito/Débito</label>
+            <select class="modal-cartao__select" id="credito_debito" required>
+                <option value="" disabled selected>Selecione</option>
+                <option value="credito">Crédito</option>
+                <option value="debito">Débito</option>
+            </select>
+
+            <div class="numeric-field-group">
+                <div class="numeric-field">
+                    <label for="vencimento">Vencimento</label>
+                    <input type="number" id="vencimento" min="1" max="31" placeholder="Dia" required>
+                </div>
+
+                <div class="numeric-field">
+                    <label for="dia_util">Dia Útil</label>
+                    <input type="number" id="dia_util" min="1" max="31" placeholder="Dia" required>
+                </div>
+            </div>
+
             <button type="button" class="modal-cartao__button" id="btn-adicionar-cartao">Adicionar Cartão</button>
         </form>
 
@@ -39,15 +53,24 @@
 </div>
 
 <!-- Scripts -->
+<script>
+    // Botão para fechar modal
+    const btnFecharModalCartao = document.getElementById('fechar-modal-cartao');
+    btnFecharModalCartao.onclick = function () {
+        const modalCartao = document.getElementById('modal-cadastro-cartao');
+        modalCartao.style.display = 'none';
+    }
+
+</script>
 
 <script type="module">
     console.log('Script módulo iniciado');
-    
+
     // Importando as funções
     try {
         const { adicionarCartao, atualizarListaCartoes } = await import('/public/js/index/modal/cartao.js');
         console.log('Módulo cartao.js importado com sucesso');
-        
+
         // Função para carregar a lista de cartões
         async function carregarCartoes() {
             console.log('Tentando carregar cartões...');
@@ -57,10 +80,10 @@
                     console.error('Elemento tbody não encontrado');
                     return;
                 }
-                
+
                 // Limpa a tabela antes de carregar
                 tbody.innerHTML = '';
-                
+
                 await atualizarListaCartoes();
                 console.log('Lista de cartões atualizada com sucesso');
             } catch (error) {
@@ -79,10 +102,10 @@
 
         function initCartao() {
             console.log('Iniciando configuração do modal de cartão');
-            
+
             // Carregar cartões imediatamente
             carregarCartoes();
-            
+
             const btnAdicionarCartao = document.getElementById('btn-adicionar-cartao');
             if (btnAdicionarCartao) {
                 console.log('Botão adicionar cartão encontrado');
@@ -97,7 +120,7 @@
             // Carregar lista de cartões quando o modal for aberto
             const modalCartao = document.getElementById('modal-cadastro-cartao');
             const btnAbrirModal = document.getElementById('btn-abrir-modal-cartao');
-            
+
             if (btnAbrirModal) {
                 console.log('Botão abrir modal encontrado');
                 btnAbrirModal.addEventListener('click', () => {
@@ -113,8 +136,8 @@
                 console.log('Modal encontrado, configurando observer');
                 const observer = new MutationObserver((mutations) => {
                     mutations.forEach((mutation) => {
-                        if (mutation.type === 'attributes' && 
-                            mutation.attributeName === 'style' && 
+                        if (mutation.type === 'attributes' &&
+                            mutation.attributeName === 'style' &&
                             modalCartao.style.display === 'block') {
                             console.log('Modal aberto - Carregando lista de cartões');
                             carregarCartoes();
@@ -122,9 +145,9 @@
                     });
                 });
 
-                observer.observe(modalCartao, { 
-                    attributes: true, 
-                    attributeFilter: ['style'] 
+                observer.observe(modalCartao, {
+                    attributes: true,
+                    attributeFilter: ['style']
                 });
             } else {
                 console.log('Modal NÃO encontrado');

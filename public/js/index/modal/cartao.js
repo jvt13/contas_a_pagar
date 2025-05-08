@@ -28,13 +28,15 @@ export async function adicionarCartao() {
         }
 
         const nomeCartao = document.getElementById('nome_cartao').value;
+        const select_credito_debito = document.getElementById('credito_debito').value;
         const vencimento = document.getElementById('vencimento').value;
         const diaUtil = document.getElementById('dia_util').value;
 
-        console.log('Valores do formulário:', { nomeCartao, vencimento, diaUtil });
+        console.log('Valores do formulário:', { nomeCartao, select_credito_debito, vencimento, diaUtil });
 
         const dadosCartao = {
             nome: nomeCartao,
+            select: select_credito_debito,
             vencimento: vencimento,
             dia_util: diaUtil
         };
@@ -257,23 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Botão abrir modal cartão clicado');
             fecharModal('modal-config-opcoes');
             abrirModal('modal-cadastro-cartao');
-        });
-    }
-
-    // Botão para fechar modal
-    const btnFecharModal = document.getElementById('fechar-modal-cartao');
-    if (btnFecharModal) {
-        btnFecharModal.addEventListener('click', () => {
-            // Reseta o formulário e o botão ao fechar
-            const form = document.getElementById('form-cadastro-cartao');
-            const btnAdicionar = document.getElementById('btn-adicionar-cartao');
-            if (form) form.reset();
-            if (btnAdicionar) {
-                btnAdicionar.textContent = 'Adicionar Cartão';
-                delete btnAdicionar.dataset.editandoId;
-                btnAdicionar.onclick = adicionarCartao;
-            }
-            fecharModal('modal-cadastro-cartao');
         });
     }
 

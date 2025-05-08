@@ -325,11 +325,11 @@ const getContaID = async (req, res) => {
 };
 
 const addCartao = async (req, res) => {
-    const { nome, vencimento, dia_util } = req.body;
-    console.log(`addCartao() parametros: ${nome}/${vencimento}/${dia_util}`);
+    const { nome, select, vencimento, dia_util } = req.body;
+    console.log(`addCartao() parametros: ${nome}/${select}/${vencimento}/${dia_util}`);
 
     try {
-        const result = await model_config.insert(nome, vencimento, dia_util);
+        const result = await model_config.insert(nome, select, vencimento, dia_util);
         console.log('Cartão inserido:', result);
         return res.json({ sucess: true, mensagem: `Cartão ${nome} inserido com sucesso!` });
     } catch (error) {

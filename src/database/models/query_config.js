@@ -1,10 +1,11 @@
 const pool = require('../conexao'); // Importa a conexão com o banco
 
-const insert = async (nome, vencimento, dia_util, numero_parcelas) => {
-    const sql = 'INSERT INTO tipo_cartao (nome, vencimento, dia_util, numero_parcelas) VALUES ($1, $2, $3, $4) RETURNING id';
+const insert = async (nome, select, vencimento, dia_util, numero_parcelas) => {
+    console.log(`Inserindo cartão: ${nome}, ${select}, ${vencimento}, ${dia_util}, ${numero_parcelas}`);
+    const sql = 'INSERT INTO tipo_cartao (nome, tipo_cartao, vencimento, dia_util, numero_parcelas) VALUES ($1, $2, $3, $4, $5) RETURNING id';
     
     try {
-        const res = await pool.query(sql, [nome, vencimento, dia_util, numero_parcelas]);
+        const res = await pool.query(sql, [nome, select, vencimento, dia_util, numero_parcelas]);
         console.log('Novo tipo de cartão inserido com ID:', res.rows[0].id);
         return res.rows[0];
     } catch (err) {
@@ -18,7 +19,7 @@ const selectAll = async () => {
 
     try {
         const res = await pool.query(sql);
-        console.log('Cartões encontrados:', res.rows);
+        //console.log('Cartões encontrados:', res.rows);
         return res.rows;
     } catch (err) {
         console.error('Erro ao buscar cartões:', err);

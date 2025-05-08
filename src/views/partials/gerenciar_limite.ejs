@@ -1,6 +1,6 @@
-<div id="modal-gerenciar-limite" class="modal" style="display: none;">
+<div id="modal-gerenciar-limite" class="modal-gerenciar-limite" style="display: none;">
     <div class="modal-conteudo">
-        <span class="fechar" id="fecharModal">&times;</span>
+        <span class="fechar" id="fechar-modal-limite">&times;</span>
         <h2>Gerenciar Limite</h2>
         <form id="form_addLimite" method="POST" onsubmit="return enviarPost(event)">
             <label for="mes">Mês:</label>
@@ -47,6 +47,13 @@
 </div>
 
 <script>
+    const btnFechar = document.getElementById('fechar-modal-limite');
+
+    btnFechar.onclick = function() {
+        const modal = document.getElementById('modal-gerenciar-limite');
+        modal.style.display = 'none';
+    }   
+
     function mostrarNovoAnoCampo() {
         const novoAnoCampo = document.getElementById('novoAnoCampo');
         novoAnoCampo.style.display = novoAnoCampo.style.display === 'none' ? 'flex' : 'none';
