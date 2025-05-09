@@ -31,7 +31,9 @@ CREATE TABLE public.contas (
     vencimento date NOT NULL,
     valor numeric(10,2) NOT NULL,
     paga boolean DEFAULT false,
-    data_inclusao timestamp without time zone DEFAULT CURRENT_TIMESTAMP(0)
+    data_inclusao timestamp without time zone DEFAULT CURRENT_TIMESTAMP(0),
+    categoria character varying(50),
+    tipo_cartao character varying(50)
 );
 
 
@@ -96,6 +98,44 @@ ALTER SEQUENCE public.limites_id_seq OWNED BY public.limites.id;
 
 
 --
+-- Name: tipo_cartao; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.tipo_cartao (
+    id integer NOT NULL,
+    nome character varying(100) NOT NULL,
+    vencimento numeric NOT NULL,
+    dia_util integer NOT NULL,
+    numero_parcelas integer,
+    tipo_cartao character varying DEFAULT 'credito'::character varying NOT NULL
+);
+
+
+ALTER TABLE public.tipo_cartao OWNER TO postgres;
+
+--
+-- Name: tipo_cartao_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.tipo_cartao_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.tipo_cartao_id_seq OWNER TO postgres;
+
+--
+-- Name: tipo_cartao_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.tipo_cartao_id_seq OWNED BY public.tipo_cartao.id;
+
+
+--
 -- Name: tipo_contas_fixa; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -157,6 +197,28 @@ CREATE TABLE public.usuarios (
 ALTER TABLE public.usuarios OWNER TO postgres;
 
 --
+-- Name: usuarios_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.usuarios_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.usuarios_id_seq OWNER TO postgres;
+
+--
+-- Name: usuarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.usuarios_id_seq OWNED BY public.usuarios.id;
+
+
+--
 -- Name: contas id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -171,10 +233,24 @@ ALTER TABLE ONLY public.limites ALTER COLUMN id SET DEFAULT nextval('public.limi
 
 
 --
+-- Name: tipo_cartao id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tipo_cartao ALTER COLUMN id SET DEFAULT nextval('public.tipo_cartao_id_seq'::regclass);
+
+
+--
 -- Name: tipo_contas_fixa id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.tipo_contas_fixa ALTER COLUMN id SET DEFAULT nextval('public.tipo_contas_fixa_id_seq'::regclass);
+
+
+--
+-- Name: usuarios id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usuarios ALTER COLUMN id SET DEFAULT nextval('public.usuarios_id_seq'::regclass);
 
 
 --
@@ -194,11 +270,27 @@ ALTER TABLE ONLY public.limites
 
 
 --
+-- Name: tipo_cartao tipo_cartao_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.tipo_cartao
+    ADD CONSTRAINT tipo_cartao_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: tipo_contas_fixa tipo_contas_fixa_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.tipo_contas_fixa
     ADD CONSTRAINT tipo_contas_fixa_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: usuarios usuarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.usuarios
+    ADD CONSTRAINT usuarios_pkey PRIMARY KEY (id);
 
 
 --

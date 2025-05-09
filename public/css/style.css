@@ -107,26 +107,36 @@ body {
 
 /* Menu Hamburger */
 .menu-toggle {
-    display: none;
-    /* Inicia escondido */
+    display: flex;
     flex-direction: column;
-    /* Para empilhar os riscos */
+    justify-content: center;
+    align-items: center;
     cursor: pointer;
-    /* Cursor de mão ao passar o mouse */
+    width: 30px;
+    height: 30px;
     margin-right: 10px;
+    z-index: 1001;
 }
 
 .menu-toggle div {
     width: 30px;
-    /* Largura dos riscos */
     height: 3px;
-    /* Altura dos riscos */
     background-color: #343a40;
-    /* Cor dos riscos */
     margin: 4px 0;
-    /* Espaço entre os riscos */
-    transition: 0.3s;
-    /* Transição suave */
+    transition: 0.4s ease;
+}
+
+/* Transformação em "X" */
+.menu-toggle.open div:nth-child(1) {
+    transform: rotate(45deg) translate(5px, 5px);
+}
+
+.menu-toggle.open div:nth-child(2) {
+    opacity: 0;
+}
+
+.menu-toggle.open div:nth-child(3) {
+    transform: rotate(-45deg) translate(6px, -6px);
 }
 
 /* Estilos para Total Container e Boxes */
@@ -160,126 +170,7 @@ body {
     font-size: 11px;
 }
 
-/* Estilo para o formulário de adicionar conta */
-.form_add {
-    background-color: #f8f9fa;
-    margin: 0 auto;
-}
 
-.form_add h2 {
-    font-weight: bold;
-    font-size: 1.2rem;
-    text-align: center;
-    padding-top: 5px;
-}
-
-.form_add input {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.form_add .card_type {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.form_add .card_type input[type="text"] {
-    width: 98%;
-}
-
-.form_add .row-cct {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
-    justify-content: space-between;
-}
-
-.form_add .row-cct select,
-.form_add .row-cct input {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-    box-sizing: border-box;
-    min-width: 150px;
-    flex: 1;
-}
-
-.form_add .row-cct select:focus,
-.form_add .row-cct input:focus {
-    border-color: #5397e0;
-    outline: none;
-}
-
-
-.form_add .row-cct .input-group {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 180px;
-}
-
-.form_add .row-fields {
-    display: flex;
-    gap: 10px;
-    justify-content: space-between;
-    flex-wrap: wrap;
-}
-
-.form_add .row-fields .input-group {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 180px;
-}
-
-
-.form_add .row-fields {
-    display: flex;
-    gap: 15px;
-    width: 100%;
-}
-
-.form_add .row-fields input {
-    flex: 1;
-    box-sizing: border-box;
-    min-width: unset;
-    width: 100%;
-
-}
-
-.form_add .row-fields input[type="text"]:focus,
-input[type="date"]:focus {
-    border-color: #5397e0;
-    outline: none;
-}
-
-.form_add button {
-    padding: 10px;
-    /* Padding interno do botão */
-    background-color: #5397e0;
-    /* Cor do botão */
-    color: white;
-    /* Cor do texto do botão */
-    border: none;
-    /* Sem borda */
-    border-radius: 5px;
-    /* Bordas arredondadas */
-    cursor: pointer;
-    /* Cursor de mão ao passar o mouse */
-    width: 100%;
-    /* Largura total */
-    font-size: 1rem;
-    /* Tamanho da fonte do botão */
-}
-
-button:hover {
-    background-color: #0056b3;
-    /* Cor do botão ao passar o mouse */
-}
 
 /* Estilo da Tabela */
 table {
@@ -304,6 +195,17 @@ td {
 th {
     background-color: #f2f2f2;
     /* Fundo do cabeçalho da tabela */
+}
+
+#lista tbody tr {
+    user-select: none;
+    /* Impede o navegador de permitir seleção */
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
+
+#lista tbody tr:active {
+    background-color: #f1f1f1;
 }
 
 /* Estilo do Rodapé */
@@ -368,6 +270,32 @@ footer {
     outline: none;
 }
 
+.btn-adicionar {
+    display: inline-block;
+    background-color: #007bff;
+    /* Azul moderno */
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+    margin: 15px auto;
+    text-align: center;
+    width: 100%;
+    /*max-width: 300px;               /* Limita em telas grandes */
+}
+
+.btn-adicionar:hover {
+    background-color: #0056b3;
+    transform: scale(1.02);
+}
+
+.btn-adicionar:active {
+    transform: scale(0.98);
+}
 
 /* Estilos Responsivos */
 @media (max-width: 768px) {
@@ -411,6 +339,12 @@ footer {
 
     .form_add .row-fields {
         flex-direction: row;
+    }
+
+    .btn-adicionar {
+        font-size: 1.1rem;
+        padding: 10px 20px;
+        width: 100%;
     }
 
 }

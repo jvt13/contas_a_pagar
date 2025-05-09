@@ -1,0 +1,62 @@
+<link rel="stylesheet" href="/public/css/modal-add-conta.css" />
+<!-- Não está funcionando, devido os nomes das classes-->
+<div id="modal-add-conta" class="modal-cartao">
+    <div class="modal-cartao__content">
+        <span id="modal-add-conta-fechar" class="modal-cartao__close" onclick="fecharModal('modal-add-conta')">&times;</span>
+        <h2 class="modal-cartao__title">Adicionar Nova Conta</h2>
+
+        <form id="modal-form-add-conta" onsubmit="return validaFormAdd(event)" class="modal-cartao__form">
+            <input type="hidden" name="ano" value="<%= anoSelecionado %>">
+            <input type="hidden" name="mes" value="<%= mesSelecionado %>">
+
+            <label class="modal-cartao__label">Nome da Conta:</label>
+            <input class="modal-cartao__input" name="nome" required placeholder="Nome da conta">
+
+            <label class="modal-cartao__label">Categoria:</label>
+            <select class="modal-cartao__select" id="categoria" name="categoria">
+                <option value="">Selecione</option>
+                <option value="fixa">Fixa</option>
+                <option value="variavel">Variável</option>
+                <option value="renda">Renda</option>
+            </select>
+
+            <label class="modal-cartao__label">Tipo de Cartão:</label>
+            <select class="modal-cartao__select" id="tipo_cartao" name="tipoCartao">
+                <option value="">Selecione</option>
+                <% if (Array.isArray(cartoes) && cartoes.length > 0) { %>
+                    <% cartoes.forEach(cartao => { %>
+                        <option value="<%= cartao.id %>">
+                            <%= cartao.nome %>
+                        </option>
+                    <% }); %>
+                <% } else { %>
+                    <option value="">Nenhum cartão disponível</option>
+                    <% } %>
+            </select>
+
+            <div class="numeric-field-group">
+                <div class="numeric-field">
+                    <label>Vencimento:</label>
+                    <input type="date" name="vencimento" required>
+                </div>
+                <div class="numeric-field">
+                    <label>Valor:</label>
+                    <input type="text" name="valor" placeholder="Valor" required>
+                </div>
+            </div>
+
+            <button class="modal-cartao__button" type="submit">Salvar Conta</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Botão para fechar modal
+    const btnFecharModal = document.getElementById('modal-add-conta-fechar');
+
+    btnFecharModal.onclick = function () {
+        const modal = document.getElementById('modal-add-conta');
+        modal.style.display = 'none';
+    }
+
+</script>

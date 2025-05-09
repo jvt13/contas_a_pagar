@@ -14,6 +14,7 @@
 
 <script type="module">
     import { postDados, putDados, getDados, deleteDados } from '../../public/js/utils/services.js';
+    import { abrirModal, fecharModal, showToast } from '../../public/js/utils/util.js';
 
     // toastModule.js
     export function showToast(mensagem = 'Ação realizada com sucesso!') {
@@ -92,6 +93,7 @@
         document.getElementById('modalContaInfo').innerText = `Conta: ${nome}`;
         document.getElementById('modalConta').style.display = 'block';
     }
+    document.addEventListener('DOMContentLoaded', configurarClickLongoTabela);
 
     function fecharModalConta() {
         document.getElementById('modalConta').style.display = 'none';
@@ -128,4 +130,53 @@
         fecharModalConta();
     }
 
+</script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const table = document.getElementById('lista'); // Substitua pelo ID da sua tabela
+        let longPressTimer;
+        const longPressDuration = 500; // 1 segundo para considerar como clique longo
+
+        // Função para lidar com o clique longo
+        function handleLongPress(target) {
+            console.log('Clique longo detectado em:', target);
+            abrirModalConta(target.dataset.id, target.dataset.nome); // Exemplo: abre o modal com ID e nome da conta
+            // Adicione aqui o que você quer fazer quando ocorrer um clique longo
+            target.classList.add('long-press'); // Exemplo: adiciona uma classe CSS
+        }
+
+        // Inicia o temporizador para clique longo
+        function startLongPressTimer(e) {
+            // Previne o comportamento padrão para evitar conflitos
+            e.preventDefault();
+
+            const target = e.target.closest('tr'); // Detecta cliques em células
+            if (!target) return;
+
+            longPressTimer = setTimeout(() => {
+                handleLongPress(target);
+            }, longPressDuration);
+        }
+
+        // Cancela o temporizador se o clique for liberado antes do tempo
+        function cancelLongPressTimer() {
+            clearTimeout(longPressTimer);
+        }
+
+        // Eventos para desktop
+        table.addEventListener('mousedown', startLongPressTimer);
+        table.addEventListener('mouseup', cancelLongPressTimer);
+        table.addEventListener('mouseleave', cancelLongPressTimer);
+
+        // Eventos para mobile
+        table.addEventListener('touchstart', startLongPressTimer);
+        table.addEventListener('touchend', cancelLongPressTimer);
+        table.addEventListener('touchcancel', cancelLongPressTimer);
+
+        // Previne o menu de contexto em dispositivos para não interferir
+        table.addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+        });
+    });
 </script>

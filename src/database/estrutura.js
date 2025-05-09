@@ -39,7 +39,7 @@ async function createTablesIfNotExist() {
     });
 
     const createTablesQuery = `
-        CREATE TABLE public.contas (
+        CREATE TABLE IF NOT EXISTS public.contas (
             id SERIAL PRIMARY KEY,
             nome character varying(255) NOT NULL,
             vencimento date NOT NULL,
@@ -80,6 +80,15 @@ async function createTablesIfNotExist() {
             nivel_acesso VARCHAR(50) DEFAULT 'usuario',
             foto_perfil BYTEA,
             verificacao_email BOOLEAN DEFAULT false
+        );
+
+        CREATE TABLE IF NOT EXISTS public.tipo_cartao (
+            id SERIAL PRIMARY KEY,
+            nome character varying(100) NOT NULL,
+            vencimento numeric NOT NULL,
+            dia_util integer NOT NULL,
+            numero_parcelas integer,
+            tipo_cartao character varying DEFAULT 'credito'::character varying NOT NULL
         );
     `;
 

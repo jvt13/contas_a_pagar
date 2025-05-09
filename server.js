@@ -48,7 +48,7 @@ async function setupDatabase() {
     await estrutura.createTablesIfNotExist();
 }
 
-//setupDatabase();  verificar
+setupDatabase();  //verificar
 
 
 // Inicialização do servidor com verificação de porta

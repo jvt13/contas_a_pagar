@@ -41,11 +41,12 @@ const selectId = async (id) => {
     }
 };
 
-const update = async (id, nome, vencimento, dia_util, numero_parcelas) => {
-    const sql = 'UPDATE tipo_cartao SET nome = $1, vencimento = $2, dia_util = $3, numero_parcelas = $4 WHERE id = $5 RETURNING *';
+const update = async (id, nome, tipo_cartao, vencimento, dia_util, numero_parcelas) => {
+    numero_parcelas = 0; // Definindo o valor padrão para numero_parcelas
+    const sql = 'UPDATE tipo_cartao SET nome = $1, tipo_cartao = $2, vencimento = $3, dia_util = $4, numero_parcelas = $5 WHERE id = $6 RETURNING *';
     
     try {
-        const res = await pool.query(sql, [nome, vencimento, dia_util, numero_parcelas, id]);
+        const res = await pool.query(sql, [nome, tipo_cartao, vencimento, dia_util, numero_parcelas, id]);
         console.log('Cartão atualizado:', res.rows[0]);
         return res.rows[0];
     } catch (err) {

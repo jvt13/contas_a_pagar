@@ -1,12 +1,14 @@
 <!-- menu.ejs -->
 <script type="module">
-    import { abrirModal } from '../../public/js/utils/util.js';
+    import { abrirModal, fecharModal, toggleMenu } from '../../public/js/utils/util.js';
     window.abrirModal = abrirModal;
+    window.toggleMenu = toggleMenu;
+    window.fecharModal = fecharModal;
 </script>
 <div class="container-menu">
     <nav class="navbar">
         <a class="navbar-brand" href="#">Menu</a>
-        <div class="menu-toggle" onclick="toggleMenu()">
+        <div class="menu-toggle" id="menuToggle" onclick="toggleMenu()">
             <div></div>
             <div></div>
             <div></div>

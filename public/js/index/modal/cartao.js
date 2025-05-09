@@ -49,7 +49,7 @@ export async function adicionarCartao() {
         if (response.sucess) {
             console.log('Cartão adicionado com sucesso!');  
             showToast('Cartão adicionado com sucesso!');
-            fecharModal('modal-cadastro-cartao');
+            //fecharModal('modal-cadastro-cartao');
             document.getElementById('form-cadastro-cartao').reset();
             // Atualizar a lista de cartões se necessário
             atualizarListaCartoes();
@@ -80,6 +80,7 @@ async function atualizarCartao(id) {
 
         // Preenche o formulário com os dados atuais
         document.getElementById('nome_cartao').value = cartao.nome || '';
+        document.getElementById('credito_debito').value = cartao.tipo_cartao || '';
         document.getElementById('vencimento').value = cartao.vencimento || '';
         document.getElementById('dia_util').value = cartao.dia_util || '';
 
@@ -94,11 +95,13 @@ async function atualizarCartao(id) {
         const oldClickHandler = btnAdicionar.onclick;
         btnAdicionar.onclick = async () => {
             const nomeCartao = document.getElementById('nome_cartao').value;
+            const tipoCartao = document.getElementById('credito_debito').value;
             const vencimento = document.getElementById('vencimento').value;
             const diaUtil = document.getElementById('dia_util').value;
 
             const dadosCartao = {
                 nome: nomeCartao,
+                tipo_cartao: tipoCartao,
                 vencimento: vencimento,
                 dia_util: diaUtil
             };
@@ -117,7 +120,7 @@ async function atualizarCartao(id) {
                     // Atualiza a lista
                     await atualizarListaCartoes();
                     // Fecha o modal
-                    fecharModal('modal-cadastro-cartao');
+                    //fecharModal('modal-cadastro-cartao');
                 } else {
                     showToast(response.message || 'Erro ao atualizar cartão');
                 }
@@ -203,15 +206,19 @@ export async function atualizarListaCartoes() {
                 // Células de dados
                 const tdNome = document.createElement('td');
                 tdNome.textContent = cartao.nome || '';
+                tdNome.style.textAlign = 'left';
                 
                 const tdVencimento = document.createElement('td');
                 tdVencimento.textContent = cartao.vencimento || '';
+                tdVencimento.style.textAlign = 'center';
                 
                 const tdDiaUtil = document.createElement('td');
                 tdDiaUtil.textContent = cartao.dia_util || '';
+                tdDiaUtil.style.textAlign = 'center';
                 
                 // Célula de ações
                 const tdAcoes = document.createElement('td');
+                tdAcoes.className = 'modal-cartao__acoes';
                 
                 // Botão Editar
                 const btnEditar = document.createElement('button');

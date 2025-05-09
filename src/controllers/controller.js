@@ -54,6 +54,9 @@ const getDadosConta = async (req, res) => {
         const anos = await model.getAnos() || []; // Função para buscar anos no banco
         console.log("Anos retornados:", anos); // Verifique o que está sendo retornado
 
+        const tipos_cartao = await model_config.selectAll(); // Função para buscar tipos de cartão no banco
+        //console.log("Tipos de cartão retornados:", tipos_cartao); // Verifique o que está sendo retornado
+
         if (!Array.isArray(anos)) {
             throw new Error('O retorno de getAnos não é um array.');
         }
@@ -69,7 +72,8 @@ const getDadosConta = async (req, res) => {
             mesSelecionado: mesSelecionado !== null ? mesSelecionado.toString() : "", // Envia como string para o frontend
             mensagemSucesso: null,
             anos: anos,
-            anoSelecionado: anoSelecionado
+            anoSelecionado: anoSelecionado,
+            tipos_cartao: tipos_cartao // Envia os tipos de cartão para o frontend
         });
     } catch (err) {
         console.error('Erro ao buscar contas:', err);
@@ -116,6 +120,9 @@ const getContas = async (req, res) => {
         const anos = await model.getAnos() || []; // Função para buscar anos no banco
         console.log("Anos retornados:", anos); // Verifique o que está sendo retornado
 
+        const tipos_cartao = await model_config.selectAll(); // Função para buscar tipos de cartão no banco
+        //console.log("Tipos de cartão retornados:", tipos_cartao); // Verifique o que está sendo retornado
+
         if (!Array.isArray(anos)) {
             throw new Error('O retorno de getAnos não é um array.');
         }
@@ -130,7 +137,8 @@ const getContas = async (req, res) => {
             mesSelecionado: mesSelecionado !== null ? mesSelecionado.toString() : "", // Envia como string para o frontend
             mensagemSucesso: null,
             anos: anos,
-            anoSelecionado: anoSelecionado
+            anoSelecionado: anoSelecionado,
+            cartoes: tipos_cartao // Envia os tipos de cartão para o frontend
         });
     } catch (err) {
         console.error('Erro ao buscar contas:', err);
@@ -384,11 +392,11 @@ const getCartaoID = async (req, res) => {
 
 const updateCartao = async (req, res) => {
     const id = req.params.id;
-    const { nome, vencimento, dia_util } = req.body;
+    const { nome, tipo_cartao, vencimento, dia_util } = req.body;
     console.log(`updateCartao() parametros: ${id}/${nome}/${vencimento}/${dia_util}`);
 
     try {
-        const result = await model_config.update(id, nome, vencimento, dia_util);
+        const result = await model_config.update(id, nome, tipo_cartao, vencimento, dia_util);
         console.log('Cartão atualizado:', result);
         return res.json({ sucess: true, mensagem: `Cartão ${nome} atualizado com sucesso!` });
     } catch (error) {

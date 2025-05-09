@@ -75,6 +75,7 @@
                 mesSelecionado,
                 anos,
                 anoSelecionado,
+                tipo_cartao,
                 error
             } = await response.json();
 
@@ -140,6 +141,28 @@
         }
 
         //getDadosTab(select_ano.value, mesElement.value);
+    }
+
+    function atualizaSelectsTipoCartao(tipo_cartao) {
+        const form = document.getElementById('modal-form-add-conta');
+        const select_tipo_cartao = form.querySelector('#tipo_cartao');
+
+        // Limpa o select
+        select_tipo_cartao.innerHTML = "";
+
+        if (Array.isArray(tipo_cartao) && tipo_cartao.length > 0) {
+            tipo_cartao.forEach(tipo => {
+                const option = document.createElement("option");
+                option.value = tipo;
+                option.textContent = tipo;
+                select_tipo_cartao.appendChild(option);
+            });
+        } else {
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = "Nenhum tipo de cartão disponível";
+            select_tipo_cartao.appendChild(option);
+        }
     }
 
 
@@ -282,11 +305,13 @@
                 atualizaTabela(contas, mes);
 
                 //Limpa os campos do formulario
-                form.querySelector('input[name="nome"]').value = "";
+                document.getElementById(form.id).reset();
+                /*form.querySelector('input[name="nome"]').value = "";
                 form.querySelector('input[name="vencimento"]').value = "";
                 form.querySelector('input[name="valor"]').value = "";
                 form.querySelector('#categoria').value = "";
-                form.querySelector('#tipo_cartao').value = "";
+                form.querySelector('#tipo_cartao').value = "";*/
+                fecharModal('modal-add-conta');
 
                 //form.querySelector('input[name="nome"]').focus();
 
@@ -300,6 +325,15 @@
         return false; // Impede o submit tradicional
     }
 
+    function fecharModal(nome) {
+        const modal = document.getElementById(nome);
+        if (modal) {
+            modal.style.display = 'none';
+        } else {
+            console.error("Modal não encontrado:", nome);
+        }
+    }
+
     function editarConta() {
         alert("Editar conta ID: " + contaSelecionadaId);
         // Aqui você pode abrir outro modal ou redirecionar para formulário de edição
@@ -311,8 +345,18 @@
             alert("Excluindo conta ID: " + contaSelecionadaId);
             // Chame fetch ou AJAX para excluir no backend
         }
-    }
+    }  
 
+    function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.innerHTML = message;
+        toast.classList.add("show");
+
+        setTimeout(() => {
+            toast.classList.remove("show");
+        }, 3000); // Duração do toast
+    }
+    
 </script>
 
 <style>
@@ -358,6 +402,7 @@
         <%- include('menu') %>
         <%- include('partials/gerenciar_cartao') %>
         <%- include('partials/config') %>
+        <%- include('partials/adicionar_conta') %>
 
             <!-- Modal -->
             <%- include('partials/gerenciar_limite') %>
@@ -398,58 +443,7 @@
                         </form>
                     </div>
 
-                    <!-- Formulário para Adicionar Nova Conta -->
-                    <form id="form_add" class="form_add" method="POST" onsubmit="return validaFormAdd(event)">
-                        <h2>Adicionar Nova Conta</h2>
-                        <div class="card_type">
-                            <input type="hidden" name="mes" value="<%= mesSelecionado %>">
-                            <input type="hidden" name="ano" value="<%= anoSelecionado %>">
-
-                            <div class="row-cct">
-                                <div class="input-group">
-                                    <label for="nome">Nome da Conta:</label>
-                                    <input type="text" name="nome" placeholder="Nome da conta" required>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="categoria">Categoria:</label>
-                                    <select id="categoria" name="categoria">
-                                        <option value="">Selecione a Categoria</option>
-                                        <option value="fixa">Contas Fixas</option>
-                                        <option value="variavel">Contas Variáveis</option>
-                                        <option value="renda">Contas de Renda</option>
-                                    </select>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="tipoCartao">Tipo de Cartão:</label>
-                                    <select id="tipo_cartao" name="tipo_cartao">
-                                        <option value="">Selecione o Tipo de Cartão</option>
-                                        <option value="credito">Cartão de Crédito</option>
-                                        <option value="debito">Cartão de Débito</option>
-                                        <option value="pre-pago">Cartão Pré-Pago</option>
-                                        <option value="outro">Outro</option>
-                                    </select>
-                                </div>
-                            </div>
-
-
-                            <div class="row-fields">
-                                <div class="input-group">
-                                    <label for="data_vencimento">Vencimento</label>
-                                    <input type="date" name="vencimento" required>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="valor">Valor da Conta</label>
-                                    <input id="form-add-limite" type="text" name="valor" placeholder="Valor" required>
-                                </div>
-                            </div>
-
-
-                            <button type="submit">Adicionar Conta</button>
-                        </div>
-                    </form>
+                    <button class="btn-adicionar" onclick="abrirModal('modal-add-conta')">+ Nova Conta</button>
 
                     <!-- Exibição de Totais -->
                     <div class="total-container">
@@ -494,8 +488,7 @@
                             </thead>
                             <tbody>
                                 <% contas.forEach((conta)=> { %>
-                                    <tr onclick="abrirModalConta(<%= conta.id %>, '<%= conta.nome.replace(/'/g, " \\'")
-                                        %>')">
+                                    <tr data-id="<%= conta.id %>" data-nome="<%= conta.nome.replace(/'/g, "\\'") %>">
                                         <td>
                                             <%= conta.nome %>
                                         </td>
@@ -529,9 +522,9 @@
                     </footer>
     </div>
 
-    <script src="/public/js/utils/util.js"></script>
+    <script type="module" src="/public/js/utils/util.js"></script>
     <script src="/public/js/index/script.js"></script>
-    <script src="/public/js/index/modal/script.js"></script>
+    <script src="/public/js/index/modal/script_ger_limite.js"></script>
     <script type="module" src="/public/js/index/modal/script_config.js"></script>
     <script type="module" src="/public/js/utils/services.js"></script>
 
