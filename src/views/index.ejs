@@ -15,17 +15,96 @@
 
 </head>
 
-<script>
+<script type="module">
+    import { getDados, postDados, putDados, deleteDados } from '/public/js/utils/services.js';
+
     var function_atualizarSelect = false;
     var ano_select_ger_limite = 0;
     var mes_select_ger_limite = 0;
 
-    function validaSelector(event) {
+    // Definindo a função no escopo global
+    window.getDadosTab = async function(ano, mes, atualizarSelect = false) {
+        console.log("getDadosTab() Ano:", ano, "Mês:", mes, "Atualizar Select:", atualizarSelect);
+
+        // Validação dos parâmetros
+        if (!ano) {
+            showToast("Por favor, selecione um ano válido");
+            return;
+        }
+
+        const cardLimite = document.getElementById('card_total_limite');
+        const cardContas = document.getElementById('card_total_contas');
+        const card_total_pagas = document.getElementById('card_total_pagas');
+        const card_total_pendentes = document.getElementById('card_total_pendentes');
+
+        try {
+            const data = await postDados('dados_tab', { ano, mes });
+
+            if (data && data.sucess) {
+                if (cardLimite) cardLimite.innerHTML = formatValor(data.total_limite);
+                if (cardContas) cardContas.innerHTML = formatValor(data.total_contas);
+                if (card_total_pagas) card_total_pagas.innerHTML = formatValor(data.total_contas_pagas);
+                if (card_total_pendentes) card_total_pendentes.innerHTML = formatValor(data.total_contas_pendentes);
+
+                atualizaSelects(data.anos, data.anoSelecionado);
+                atualizaOuRecriaCards({
+                    mesSelecionado: data.mesSelecionado,
+                    limiteColor: data.limiteColor,
+                    total_limite: data.total_limite,
+                    total_contas: data.total_contas,
+                    total_contas_pagas: data.total_contas_pagas,
+                    total_contas_pendentes: data.total_contas_pendentes
+                });
+
+                atualizaTabela(data.contas, data.mesSelecionado);
+            } else {
+                console.error("Resposta inválida do servidor:", data);
+                showToast(data?.message || "Erro ao atualizar dados!");
+            }
+        } catch (error) {
+            console.error("Erro na getDadosTab:", error);
+            showToast("Erro ao atualizar dados!");
+        }
+    };
+
+    // Definindo a função no escopo global
+    window.trataStatusConta = async function(checkbox, contaId, mesSelecionado) {
+        const paga = checkbox.checked;
+        console.log("trataStatusConta() - Conta ID:", contaId, "Mês:", mesSelecionado, "Paga:", paga);
+
+        try {
+            const data = await postDados('/marcar-paga', { 
+                mes: mesSelecionado, 
+                index: contaId, 
+                paga: paga 
+            });
+            
+            if (data && data.sucess) {
+                showToast("Status atualizado com sucesso!");
+                // Atualiza a tabela com os novos dados
+                getDadosTab(
+                    document.querySelector('#contas-selector-ano').value,
+                    document.querySelector('#contas-selector-mes').value
+                );
+            } else {
+                console.error("Resposta inválida do servidor:", data);
+                showToast("Erro ao atualizar status!");
+                checkbox.checked = !checkbox.checked; // Reverte o checkbox em caso de erro
+            }
+        } catch (error) {
+            console.error("Erro ao atualizar status:", error);
+            showToast("Erro ao atualizar status!");
+            checkbox.checked = !checkbox.checked; // Reverte o checkbox em caso de erro
+        }
+    };
+
+    // Exportando a função para o escopo global
+    window.validaSelector = function(event) {
         if (event) event.preventDefault(); // Impede o envio padrão do formulário
 
         const form = document.getElementById('form_selector');
-        const anoElement = form.querySelector("#ano"); // Seleciona o ano dentro do formulário
-        const mesElement = form.querySelector("#inputMes"); // Seleciona o mês dentro do formulário
+        const anoElement = form.querySelector("#contas-selector-ano"); // Seleciona o ano dentro do formulário
+        const mesElement = form.querySelector("#contas-selector-mes"); // Seleciona o mês dentro do formulário
 
         const ano = anoElement.value; // Pega o valor do ano
         const mes = mesElement.value; // Pega o valor do mês
@@ -42,77 +121,20 @@
 
         document.querySelector('input[name="mes"]').value = mes;
         document.querySelector('input[name="ano"]').value = ano;
-
-    }
+    };
 
     function formatValor(valor) {
         return `R$ ${Number(valor || 0).toFixed(2).replace('.', ',')}`;
     }
 
-    async function getDadosTab(ano, mes, atualizarSelect = false) {
-        console.log("getDadosTab() Ano:", ano, "Mês:", mes, "Atualizar Select:", atualizarSelect);
-
-        const cardLimite = document.getElementById('card_total_limite');
-        const cardContas = document.getElementById('card_total_contas');
-        const card_total_pagas = document.getElementById('card_total_pagas');
-        const card_total_pendentes = document.getElementById('card_total_pendentes');
-
-        try {
-            const response = await fetch('dados_tab', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ano, mes })
-            });
-
-            const {
-                sucess,
-                contas,
-                total_contas,
-                total_contas_pagas,
-                total_contas_pendentes,
-                total_limite,
-                limiteColor,
-                mesSelecionado,
-                anos,
-                anoSelecionado,
-                tipo_cartao,
-                error
-            } = await response.json();
-
-            if (sucess) {
-                if (cardLimite) cardLimite.innerHTML = total_limite;
-                cardContas.innerHTML = formatValor(total_contas);
-                card_total_pagas.innerHTML = formatValor(total_contas_pagas);
-                card_total_pendentes.innerHTML = formatValor(total_contas_pendentes);
-
-                atualizaSelects(anos, anoSelecionado);
-                atualizaOuRecriaCards({
-                    mesSelecionado,
-                    limiteColor,
-                    total_limite,
-                    total_contas,
-                    total_contas_pagas,
-                    total_contas_pendentes
-                });
-
-                atualizaTabela(contas, mesSelecionado);
-            } else {
-                console.error(error);
-            }
-        } catch (error) {
-            console.error("Erro na getDadosTab:", error);
-        }
-    }
-
-
     function atualizaSelects(listaDeAnos, anoSelecionado) {
         const form = document.getElementById('form_selector');
-        const select_ano = form.querySelector('#ano');
-        const mesElement = form.querySelector("#inputMes");
+        const select_ano = form.querySelector('#contas-selector-ano');
+        const mesElement = form.querySelector("#contas-selector-mes");
         const mes = parseInt(mesElement.value) - 1; // Pega o valor do mês
 
         const form_add = document.getElementById('form_addLimite');
-        const select_add = form_add.querySelector('#ano');
+        const select_add = form_add.querySelector('#contas-selector-ano');
 
         function_atualizarSelect = true;
 
@@ -172,24 +194,22 @@
         tabela.innerHTML = '<tr><th>Nome</th><th>Vencimento</th><th>Valor</th><th>Paga</th></tr>';
 
         for (let i = 0; i < data.length; i++) {
-            //console.log('dentro do for')
             const isChecked = data[i].paga ? "checked" : "";
-            //console.log('depois cheked')
 
-            tabela.innerHTML += `<tr onclick="abrirModalConta(${data[i].id}, '${data[i].nome.replace(/'/g, "\\'")}')">
-                <td>${data[i].nome}</td>
-                <td>${data[i].vencimento}</td>
-                <td>R$ ${data[i].valor.toFixed(2).replace('.', ',')}</td>
+            tabela.innerHTML += `<tr data-id="${data[i].id}" data-nome="${data[i].nome.replace(/'/g, "\\'")}">
+                <td class="nao-selecionavel">${data[i].nome}</td>
+                <td class="nao-selecionavel">${data[i].vencimento}</td>
+                <td class="nao-selecionavel">R$ ${data[i].valor.toFixed(2).replace('.', ',')}</td>
                 <td>
-                    <form action="/marcar-paga" method="post">
+                    <form id="form-status-${data[i].id}" onsubmit="return false;">
                         <input type="hidden" name="mes" value="${mesSelecionado}">
                         <input type="hidden" name="index" value="${data[i].id}">
                         <input type="checkbox" name="paga" value="true" ${isChecked}
-                            onchange="this.form.submit()">
+                            onchange="trataStatusConta(this, ${data[i].id}, '${mesSelecionado}'); return false;"
+                            ontouchstart="this.checked = !this.checked; trataStatusConta(this, ${data[i].id}, '${mesSelecionado}'); return false;" />
                     </form>
                 </td>
             </tr>`;
-
         }
     }
 
@@ -267,72 +287,69 @@
         }
     }
 
-    async function validaFormAdd(event) {
+    // Exportando a função para o escopo global
+    window.validaFormAdd = async function(event) {
         event.preventDefault(); // Impede o envio padrão
 
         const form = event.target;
+        console.log('Formulário:', form);
 
-        const nome = form.querySelector('input[name="nome"]').value;
-        const vencimento = form.querySelector('input[name="vencimento"]').value;
-        const valor = form.querySelector('input[name="valor"]').value;
-        const ano = form.querySelector('input[name="ano"]').value;
-        const mes = form.querySelector('input[name="mes"]').value;
-        const categoria = form.querySelector('#categoria').value;
-        const tipo_cartao = form.querySelector('#tipo_cartao').value;
+        // Coleta os dados do formulário
+        const formData = {
+            nome: form.querySelector('input[name="nome"]').value,
+            vencimento: form.querySelector('input[name="vencimento"]').value,
+            valor: form.querySelector('input[name="valor"]').value,
+            ano: form.querySelector('input[name="ano"]').value,
+            mes: form.querySelector('input[name="mes"]').value,
+            categoria: form.querySelector('#categoria').value,
+            tipo_cartao: form.querySelector('#tipo_cartao').value
+        };
+
+        console.log('Dados do formulário:', formData);
 
         try {
-            const response = await fetch('form_conta', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome, vencimento, valor, ano, mes, categoria, tipo_cartao })
-            });
+            const response = await postDados('form_conta', formData);
+            console.log('Resposta do servidor:', response);
 
-            const { sucess, contas, total_contas, total_contas_pagas, total_contas_pendentes, total_limite, limiteColor, mesSelecionado, anos, anoSelecionado, error } = await response.json();
-
-            if (sucess) {
+            if (response.sucess) {
                 console.log('Requisição bem sucedida...');
-                showToast("Conta adicionada com sucesso!");
+                window.showToast("Conta adicionada com sucesso!");
 
-                atualizaOuRecriaCards({
-                    mesSelecionado,
-                    limiteColor,
-                    total_limite,
-                    total_contas,
-                    total_contas_pagas,
-                    total_contas_pendentes
+                // Atualiza os cards e a tabela
+                window.atualizaOuRecriaCards({
+                    mesSelecionado: response.mesSelecionado,
+                    limiteColor: response.limiteColor,
+                    total_limite: response.total_limite,
+                    total_contas: response.total_contas,
+                    total_contas_pagas: response.total_contas_pagas,
+                    total_contas_pendentes: response.total_contas_pendentes
                 });
 
-                atualizaTabela(contas, mes);
+                window.atualizaTabela(response.contas, formData.mes);
 
-                //Limpa os campos do formulario
-                document.getElementById(form.id).reset();
-                /*form.querySelector('input[name="nome"]').value = "";
-                form.querySelector('input[name="vencimento"]').value = "";
-                form.querySelector('input[name="valor"]').value = "";
-                form.querySelector('#categoria').value = "";
-                form.querySelector('#tipo_cartao').value = "";*/
-                fecharModal('modal-add-conta');
-
-                //form.querySelector('input[name="nome"]').focus();
+                // Limpa o formulário
+                form.reset();
+                
+                // Fecha o modal
+                window.fecharModal('modal-add-conta');
 
             } else {
-                console.log('Erro no post...');
+                console.error('Erro no servidor:', response.error);
+                window.showToast(response.error || "Erro ao adicionar conta");
             }
         } catch (error) {
             console.error("Erro ao enviar dados do formulário:", error);
+            window.showToast("Erro ao adicionar conta");
         }
 
         return false; // Impede o submit tradicional
-    }
+    };
 
-    function fecharModal(nome) {
-        const modal = document.getElementById(nome);
-        if (modal) {
-            modal.style.display = 'none';
-        } else {
-            console.error("Modal não encontrado:", nome);
-        }
-    }
+    // Exportando outras funções necessárias para o escopo global
+    window.atualizaOuRecriaCards = atualizaOuRecriaCards;
+    window.atualizaTabela = atualizaTabela;
+    window.fecharModal = fecharModal;
+    window.showToast = showToast;
 
     function editarConta() {
         alert("Editar conta ID: " + contaSelecionadaId);
@@ -356,7 +373,6 @@
             toast.classList.remove("show");
         }, 3000); // Duração do toast
     }
-    
 </script>
 
 <style>
@@ -412,7 +428,7 @@
                     <div class="selector-container">
                         <form action="/" method="GET" id="form_selector" onsubmit="validaSelector(event)">
                             <label for="ano">Ano:</label>
-                            <select id="ano" name="ano" onchange="validaSelector(event)">
+                            <select id="contas-selector-ano" name="ano" onchange="validaSelector(event)">
                                 <% if (Array.isArray(anos) && anos.length> 0) { %>
                                     <% anos.forEach(ano=> { %>
                                         <option value="<%= ano.ano %>" <%=anoSelecionado===ano.ano ? 'selected' : '' %>>
@@ -425,7 +441,7 @@
                             </select>
 
                             <label for="inputMes">Mês:</label>
-                            <select name="mes" id="inputMes" onchange="validaSelector(event)">
+                            <select name="mes" id="contas-selector-mes" onchange="validaSelector(event)">
                                 <option value="" <%=mesSelecionado==="" ? 'selected' : '' %>>Todos</option>
                                 <option value="0" <%=mesSelecionado==='0' ? 'selected' : '' %>>Janeiro</option>
                                 <option value="1" <%=mesSelecionado==='1' ? 'selected' : '' %>>Fevereiro</option>
@@ -489,27 +505,24 @@
                             <tbody>
                                 <% contas.forEach((conta)=> { %>
                                     <tr data-id="<%= conta.id %>" data-nome="<%= conta.nome.replace(/'/g, "\\'") %>">
-                                        <td>
+                                        <td class="nao-selecionavel">
                                             <%= conta.nome %>
                                         </td>
-                                        <td>
+                                        <td class="nao-selecionavel">
                                             <%= conta.vencimento %>
                                         </td>
-                                        <td>R$<%= conta.valor.toFixed(2).replace('.', ',' ) %>
+                                        <td class="nao-selecionavel">R$<%= conta.valor.toFixed(2).replace('.', ',' ) %>
                                         </td>
                                         <td>
-                                            <form action="/marcar-paga" method="post">
-                                                <input type="hidden" name="mes" value="<%= mesSelecionado %>">
-                                                <input type="hidden" name="index" value="<%= conta.id %>">
-                                                <input type="checkbox" name="paga" value="true" <% if (conta.paga) { %>
-                                                checked <% } %>
-                                                    onchange="this.form.submit()"
-                                                    onclick="event.stopPropagation()" />
-
-                                            </form>
+                                            <input type="checkbox" 
+                                                name="paga" 
+                                                value="true" 
+                                                <% if (conta.paga) { %> checked <% } %>
+                                                onchange="trataStatusConta(this, <%= conta.id %>, '<%= mesSelecionado %>')"
+                                                ontouchstart="this.checked = !this.checked; trataStatusConta(this, <%= conta.id %>, '<%= mesSelecionado %>'); return false;" />
                                         </td>
                                     </tr>
-                                    <% }); %>
+                                <% }); %>
                             </tbody>
                         </table>
                     </div>

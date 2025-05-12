@@ -15,7 +15,7 @@ const getContas = async (mes, ano) => {
     const result = await pool.query(`
         SELECT * FROM contas
         WHERE ($1::int IS NULL OR EXTRACT(MONTH FROM vencimento) = $1::int)
-        AND ($2::int IS NULL OR EXTRACT(YEAR FROM vencimento) = $2::int)
+        AND ($2::int IS NULL OR EXTRACT(YEAR FROM vencimento) = $2::int) ORDER BY vencimento
     `, [mesInt, anoInt]);
 
     return result.rows.map(conta => ({

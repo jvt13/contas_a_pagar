@@ -17,6 +17,31 @@ async function formatarParaBRL(valor) {
     });
 }
 
+function dataAtualFormatada() {
+    var data = new Date(),
+        dia = data.getDate().toString().padStart(2, '0'),
+        mes = (data.getMonth() + 1).toString().padStart(2, '0'), //+1 pois no getMonth Janeiro começa com zero.
+        ano = data.getFullYear();
+    return dia + "/" + mes + "/" + ano;
+}
+
+function formatDataBR(dta) {
+    const date = new Date(dta);
+    var formatedDate = date.toLocaleDateString({
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
+    //console.log(formatedDate)
+    return formatedDate;
+}
+
+function converterParaFormatoDate(valor) {
+    if (!valor || typeof valor !== 'string') return '';
+    
+    const [dia, mes, ano] = valor.split('/');
+    return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+}
 
 
-module.exports = { formatarParaBRL };
+module.exports = { formatarParaBRL, dataAtualFormatada, formatDataBR, converterParaFormatoDate };

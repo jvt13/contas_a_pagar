@@ -58,8 +58,21 @@ function handleClickOutsideMenu(event) {
 
 export function abrirModal(nome) {
     console.log('Abrindo modal - ' + nome);
-    document.getElementById(nome).style.display = 'flex'; // Mostra o modal
+
+    const modal = document.getElementById(nome);
+    if (!modal) {
+        console.warn(`Modal com id "${nome}" não encontrado.`);
+        return;
+    }
+
+    const form = modal.querySelector('form');
+    if (form) {
+        form.reset();
+    }
+
+    modal.style.display = 'flex'; // Mostra o modal
 }
+
 
 export function fecharModal(nome) {
     document.getElementById(nome).style.display = 'none'; // Oculta o modal

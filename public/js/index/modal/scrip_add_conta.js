@@ -1,0 +1,1 @@
+import { postDados, putDados, getDados, deleteDados } from '/public/js/utils/services.js';

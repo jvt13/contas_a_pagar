@@ -94,22 +94,22 @@
 
         // Carregar cartões quando o DOM estiver pronto
         if (document.readyState === 'loading') {
-            console.log('DOM ainda carregando, aguardando...');
+            //console.log('DOM ainda carregando, aguardando...');
             document.addEventListener('DOMContentLoaded', initCartao);
         } else {
-            console.log('DOM já carregado, iniciando imediatamente');
+            //console.log('DOM já carregado, iniciando imediatamente');
             initCartao();
         }
 
         function initCartao() {
-            console.log('Iniciando configuração do modal de cartão');
+            //console.log('Iniciando configuração do modal de cartão');
 
             // Carregar cartões imediatamente
             carregarCartoes();
 
             const btnAdicionarCartao = document.getElementById('btn-adicionar-cartao');
             if (btnAdicionarCartao) {
-                console.log('Botão adicionar cartão encontrado');
+                //console.log('Botão adicionar cartão encontrado');
                 btnAdicionarCartao.addEventListener('click', async () => {
                     await adicionarCartao();
                     await carregarCartoes();
@@ -125,7 +125,7 @@
             if (btnAbrirModal) {
                 console.log('Botão abrir modal encontrado');
                 btnAbrirModal.addEventListener('click', () => {
-                    console.log('Botão abrir modal cartão clicado');
+                    //console.log('Botão abrir modal cartão clicado');
                     carregarCartoes();
                 });
             } else {
@@ -134,13 +134,13 @@
 
             // Observa mudanças no estilo do modal
             if (modalCartao) {
-                console.log('Modal encontrado, configurando observer');
+                //console.log('Modal encontrado, configurando observer');
                 const observer = new MutationObserver((mutations) => {
                     mutations.forEach((mutation) => {
                         if (mutation.type === 'attributes' &&
                             mutation.attributeName === 'style' &&
                             modalCartao.style.display === 'block') {
-                            console.log('Modal aberto - Carregando lista de cartões');
+                            //console.log('Modal aberto - Carregando lista de cartões');
                             carregarCartoes();
                         }
                     });

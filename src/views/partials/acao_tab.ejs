@@ -6,8 +6,8 @@
         <p id="modalContaInfo"></p>
 
         <div class="modal-botoes">
-            <button onclick="editarConta()">Editar</button>
-            <button onclick="excluirConta(contaSelecionadaId)">Excluir</button>
+            <button id="btn-conta-editar" onclick="editarConta()">Editar</button>
+            <button id="btn-conta-excluir" onclick="excluirConta(contaSelecionadaId)">Excluir</button>
         </div>
     </div>
 </div>
@@ -16,16 +16,12 @@
     import { postDados, putDados, getDados, deleteDados } from '../../public/js/utils/services.js';
     import { abrirModal, fecharModal, showToast } from '../../public/js/utils/util.js';
 
-    // toastModule.js
-    export function showToast(mensagem = 'Ação realizada com sucesso!') {
-        const toast = document.getElementById("toast");
-        toast.textContent = mensagem;
-        toast.classList.add("show");
-
-        setTimeout(() => {
-            toast.classList.remove("show");
-        }, 3000);
-    }
+    // Exporta as funções necessárias para o escopo global
+    window.deleteDados = deleteDados;
+    window.getDados = getDados;
+    window.showToast = showToast;
+    window.getDadosTab = getDadosTab;
+    window.abrirModal = abrirModal;
 
     window.getContasID = async function (url, id) {
         try {
@@ -41,7 +37,7 @@
             throw new Error(`Erro HTTP: ${response.status}`);
         } catch (error) {
             console.error('Erro ao buscar dados:', error);
-            throw error; // Propaga o erro para ser tratado por quem chamou
+            throw error;
         }
     };
 
@@ -63,26 +59,6 @@
             showToast('Erro ao atualizar a conta.');
         }
     };
-
-    // Exporta a função para o escopo global
-    window.excluirContaModule = async function (url, id) {
-        if (!confirm(`Tem certeza que deseja excluir esta conta, com o ID ${id}?`)) {
-            return;
-        }
-
-        try {
-            await deleteDados(url + id);
-            showToast('Conta excluída com sucesso!');
-            // Atualiza a tabela
-            const form = document.getElementById('form_selector');
-            const ano = form.querySelector("#ano").value;
-            const mes = form.querySelector("#inputMes").value;
-            getDadosTab(ano, mes);
-        } catch (error) {
-            console.error('Erro ao excluir a conta:', error);
-            showToast('Erro ao excluir a conta.');
-        }
-    };
 </script>
 
 <script>
@@ -93,90 +69,158 @@
         document.getElementById('modalContaInfo').innerText = `Conta: ${nome}`;
         document.getElementById('modalConta').style.display = 'block';
     }
-    document.addEventListener('DOMContentLoaded', configurarClickLongoTabela);
 
     function fecharModalConta() {
         document.getElementById('modalConta').style.display = 'none';
         contaSelecionadaId = null;
     }
 
-    async function editarConta() {
+    async function excluirConta(id) {
+        /*if (!confirm(`Tem certeza que deseja excluir esta conta, com o ID ${id}?`)) {
+            return;
+        }*/
+
         try {
-            const form_add = document.getElementById('form_add');
-            const result = await getContasID('/get_conta_id/', contaSelecionadaId);
-
-            if (!result.success) {
-                throw new Error(result.message || 'Erro ao buscar conta');
-            }
-
-            const conta = result.data; // Acessa os dados dentro do campo data
-
-            // Preenche o formulário com valores padrão caso algum seja undefined
-            form_add.querySelector('input[name="nome"]').value = conta.nome || '';
-            form_add.querySelector('input[name="vencimento"]').value = conta.vencimento || '';
-            form_add.querySelector('input[name="valor"]').value = conta.valor || 0;
-            form_add.querySelector('select[name="categoria"]').value = conta.categoria || '';
-            form_add.querySelector('select[name="tipo_cartao"]').value = conta.tipo_cartao || '';
-
+            await window.deleteDados('/delete_conta/' + id);
+            window.showToast('Conta excluída com sucesso!');
+            // Atualiza a tabela
+            const form = document.getElementById('form_selector');
+            const ano = form.querySelector("#contas-selector-ano").value;
+            const mes = form.querySelector("#contas-selector-mes").value;
+            window.getDadosTab(ano, mes);
             fecharModalConta();
         } catch (error) {
-            console.error('Erro ao editar conta:', error);
-            showToast(`Erro: ${error.message}`);
+            console.error('Erro ao excluir a conta:', error);
+            window.showToast('Erro ao excluir a conta.');
         }
     }
 
-    async function excluirConta(id) {
-        await excluirContaModule('/delete_conta/', `${id}`);
-        fecharModalConta();
+    async function editarConta() {
+        try {
+            console.log('ID editarConta():', contaSelecionadaId);
+            const form_add = document.getElementById('modal-form-add-conta');
+
+            if (!form_add) {
+                throw new Error('Formulário de edição não encontrado');
+            }
+
+            try {
+                console.log(`Buscando conta ID: ${contaSelecionadaId}`);
+                const response = await window.getDados('/get_conta_id/' + contaSelecionadaId);
+
+                console.log('Status:', response.success);
+                if (response.success) {
+                    window.abrirModal('modal-add-conta');
+                    console.log('Dados recebidos:', response);
+                    const conta = response.data;
+
+                    // Verifica se cada elemento existe antes de tentar definir o valor
+                    const tipoSelect = form_add.querySelector('select[name="tipoCartao"]');
+                    const nomeInput = form_add.querySelector('input[name="nome"]');
+                    const vencimentoInput = form_add.querySelector('input[name="vencimento"]');
+                    const valorInput = form_add.querySelector('input[name="valor"]');
+                    const categoriaSelect = form_add.querySelector('select[name="categoria"]');
+                    const tipoCartaoSelect = form_add.querySelector('select[name="tipo_cartao"]');
+
+                    if (nomeInput) nomeInput.value = conta.nome || '';
+                    if (vencimentoInput) vencimentoInput.value = conta.vencimento || '';
+                    if (valorInput) valorInput.value = conta.valor || 0;
+                    if (tipoSelect) tipoSelect.value = conta.tipo_cartao || '';
+                    if (categoriaSelect) categoriaSelect.value = conta.categoria || '';
+                    if (tipoCartaoSelect) tipoCartaoSelect.value = conta.tipo_cartao || '';
+
+                    fecharModalConta();
+                } else {
+                    throw new Error('Erro ao buscar dados da conta');
+                }
+            } catch (error) {
+                console.error('Erro ao buscar dados:', error);
+                throw error;
+            }
+        } catch (error) {
+            console.error('Erro ao editar conta:', error);
+            window.showToast(`Erro: ${error.message}`);
+        }
     }
 
+    document.addEventListener('DOMContentLoaded', configurarClickLongoTabela);
 </script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const table = document.getElementById('lista'); // Substitua pelo ID da sua tabela
-        let longPressTimer;
-        const longPressDuration = 500; // 1 segundo para considerar como clique longo
+        const table = document.getElementById('lista');
+        let longPressTimer = null;
+        const longPressDuration = 500;
 
-        // Função para lidar com o clique longo
         function handleLongPress(target) {
-            console.log('Clique longo detectado em:', target);
-            abrirModalConta(target.dataset.id, target.dataset.nome); // Exemplo: abre o modal com ID e nome da conta
-            // Adicione aqui o que você quer fazer quando ocorrer um clique longo
-            target.classList.add('long-press'); // Exemplo: adiciona uma classe CSS
+            if (!target) return;
+            const id = target.getAttribute('data-id');
+            const nome = target.getAttribute('data-nome');
+            if (id && nome) {
+                abrirModalConta(id, nome);
+            }
         }
 
-        // Inicia o temporizador para clique longo
-        function startLongPressTimer(e) {
-            // Previne o comportamento padrão para evitar conflitos
-            e.preventDefault();
-
-            const target = e.target.closest('tr'); // Detecta cliques em células
+        function startTouchTimer(e) {
+            const target = e.target.closest('tr');
             if (!target) return;
 
+            let moved = false;
+
+            function cancel() {
+                clearTimeout(longPressTimer);
+                target.removeEventListener('touchmove', onMove);
+                target.removeEventListener('touchend', cancel);
+                target.removeEventListener('touchcancel', cancel);
+            }
+
+            function onMove() {
+                moved = true;
+                cancel();
+            }
+
             longPressTimer = setTimeout(() => {
-                handleLongPress(target);
+                if (!moved) {
+                    handleLongPress(target);
+                }
             }, longPressDuration);
+
+            target.addEventListener('touchmove', onMove);
+            target.addEventListener('touchend', cancel);
+            target.addEventListener('touchcancel', cancel);
         }
 
-        // Cancela o temporizador se o clique for liberado antes do tempo
-        function cancelLongPressTimer() {
-            clearTimeout(longPressTimer);
+        function startMouseTimer(e) {
+            const target = e.target.closest('tr');
+            if (!target) return;
+
+            let moved = false;
+
+            function cancel() {
+                clearTimeout(longPressTimer);
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', cancel);
+            }
+
+            function onMove() {
+                moved = true;
+                cancel();
+            }
+
+            longPressTimer = setTimeout(() => {
+                if (!moved) {
+                    handleLongPress(target);
+                }
+            }, longPressDuration);
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', cancel);
         }
 
-        // Eventos para desktop
-        table.addEventListener('mousedown', startLongPressTimer);
-        table.addEventListener('mouseup', cancelLongPressTimer);
-        table.addEventListener('mouseleave', cancelLongPressTimer);
+        table.addEventListener('touchstart', startTouchTimer);
+        table.addEventListener('mousedown', startMouseTimer);
 
-        // Eventos para mobile
-        table.addEventListener('touchstart', startLongPressTimer);
-        table.addEventListener('touchend', cancelLongPressTimer);
-        table.addEventListener('touchcancel', cancelLongPressTimer);
-
-        // Previne o menu de contexto em dispositivos para não interferir
-        table.addEventListener('contextmenu', function (e) {
-            e.preventDefault();
-        });
+        table.addEventListener('contextmenu', (e) => e.preventDefault());
     });
+
 </script>

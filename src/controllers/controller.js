@@ -2,12 +2,21 @@ const { parseISO, format } = require('date-fns');
 const model = require('../database/models/query_conta'); // Importa o módulo de consultas
 const model_config = require('../database/models/query_config'); // Importa o módulo de consultas
 //const pool = require('../database/conexao');
-const { formatarParaBRL } = require('../utils/util'); // Importa funções utilitárias
+const { formatarParaBRL, dataAtualFormatada, formatDataBR, converterParaFormatoDate } = require('../utils/util'); // Importa funções utilitárias
 
 const getDadosConta = async (req, res) => {
     let mesSelecionado = req.body.mes || ""; // Pega o mês como string
     let anoSelecionado = req.body.ano || "";
     console.log(`--------------------------------Mês selecionado: ${mesSelecionado} - Ano selecionado: ${anoSelecionado}`)
+
+    // Validação dos parâmetros
+    if (!anoSelecionado) {
+        return res.status(400).json({
+            sucess: false,
+            error: "Ano é obrigatório",
+            message: "Por favor, selecione um ano válido"
+        });
+    }
 
     // Define uma variável para armazenar o mês ajustado
     let mesNumero = null;
@@ -44,7 +53,6 @@ const getDadosConta = async (req, res) => {
             console.log('Limite: ' + limite_gastos)
         }
 
-
         console.log(`Ano selecionado: ${anoSelecionado} / Mês selecionado: ${mesSelecionado}`);
         const limiteColor = (mesSelecionado !== '' && mesSelecionado >= 0 && mesSelecionado <= 11)
             ? obterCor(totalContas, limite_gastos)  // Chama a função se um mês específico foi selecionado
@@ -61,7 +69,7 @@ const getDadosConta = async (req, res) => {
             throw new Error('O retorno de getAnos não é um array.');
         }
 
-        res.json({
+        return res.json({
             sucess: true,
             contas,
             total_contas: totalContas,
@@ -77,7 +85,11 @@ const getDadosConta = async (req, res) => {
         });
     } catch (err) {
         console.error('Erro ao buscar contas:', err);
-        res.send("Erro ao buscar contas.");
+        return res.status(500).json({
+            sucess: false,
+            error: "Erro ao buscar contas.",
+            message: err.message
+        });
     }
 }
 // Controlador para obter contas
@@ -201,18 +213,18 @@ const getContasPendentes = async (req, res) => {
 // Controlador para marcar conta como paga ou pendente
 const alteraStatusConta = async (req, res) => {
     const index = req.body.index; // ID da conta a ser atualizada
-    const check = req.body.paga === 'true'; // Verifica se o valor é uma string 'true', ajustando para booleano
+    const check = req.body.paga; // Verifica se o valor é uma string 'true', ajustando para booleano
     const mes = req.body.mes;
 
+    console.log(`alteraStatusConta() - Conta ID: ${index}, Mês: ${mes}, Paga: ${check}`);
     try {
         await model.updateContas(index, check); // Atualiza o status da conta
         console.log(`Conta ${index} marcada como ${check ? 'paga' : 'pendente'}!`);
+        res.json({ sucess: true, message: 'Status atualizado com sucesso' });
     } catch (err) {
         console.error('Erro ao marcar conta:', err);
-        res.send("Erro ao alterar o status da conta.");
+        res.status(500).json({ sucess: false, message: 'Erro ao alterar o status da conta' });
     }
-
-    res.redirect('/?mes=' + mes);
 };
 
 const gerenciarLimite = async (req, res) => {
@@ -367,8 +379,41 @@ const excluirCartao = async (req, res) => {
 
 const getCartaoID = async (req, res) => {
     const id = req.params.id;
+    console.log('ID recebido para consulta:', id);
+    const data = dataAtualFormatada(); // Data atual
+    const dia = data.split('/')[0]; // Dia atual
+    const mes = data.split('/')[1]; // Mês atual
+    const ano = data.split('/')[2]; // Ano atual
+
+    console.log(`Data atual: ${dia}/${mes}/${ano}`);
+    console.log(`Mês atual: ${mes}`);
     try {
         const cartao = await model_config.selectId(id);
+
+        const vencimento = cartao.vencimento; // Vencimento do cartão
+        const dia_util = cartao.dia_util; // Dia útil do cartão
+
+        console.log(`Vencimento do cartão: ${vencimento}`);
+        console.log(`Dia útil do cartão: ${dia_util}`);
+
+        // NOVO BLOCO DE SUBSTITUIÇÃO
+        const novoMes = (parseInt(mes)).toString().padStart(2, '0');
+        const vencDia = cartao.vencimento.toString().padStart(2, '0');
+
+        // Se dia >= dia_util, incrementa o mês
+        let novoMesFinal = parseInt(mes);
+        if (parseInt(dia) >= parseInt(dia_util)) {
+            novoMesFinal++;
+            if (novoMesFinal > 12) {
+                novoMesFinal = 1;
+                ano = (parseInt(ano) + 1).toString();
+            }
+        }
+        const vencimentoFormatado = `${ano}-${String(novoMesFinal).padStart(2, '0')}-${vencDia}`;
+
+        // Atualiza no objeto
+        cartao.vencimento = vencimentoFormatado;
+
 
         if (!cartao) {
             return res.status(404).json({
@@ -377,7 +422,7 @@ const getCartaoID = async (req, res) => {
             });
         }
 
-        res.json({
+        res.status(200).json({
             success: true,
             data: cartao
         });

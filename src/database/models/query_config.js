@@ -33,7 +33,7 @@ const selectId = async (id) => {
 
     try {
         const res = await pool.query(sql, [id]);
-        console.log('Cartão encontrado:', res.rows[0]);
+        //console.log('Cartão encontrado:', res.rows[0]);
         return res.rows[0];
     } catch (err) {
         console.error('Erro ao buscar cartão:', err);
