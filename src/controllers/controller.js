@@ -163,15 +163,6 @@ const addConta = async (req, res) => {
     const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao } = req.body;
 
     try {
-        // posteriormente, fazer essa consulta no banco de dados para verificar se já existe, se existe, atualiza
-        // Se não existe, adiciona a nova conta
-        /*const result = await model.getContas(mes, ano); // Chama a função para obter contas
-
-        if (result) {
-            await model.updateContas(mes, ano, nome, vencimento, valor, categoria, tipo_cartao); // Atualiza a conta se já existir
-            console.log(`Conta ${nome} atualizada com sucesso!!!`);
-            return getDadosConta(req, res); // Chama getContas passando a requisição e resposta
-        }*/
         await model.addConta({ nome, vencimento, valor, categoria, tipo_cartao }); // Adiciona a nova conta
         console.log(`Conta ${nome} inserido com sucesso!!!`)
 
@@ -180,7 +171,8 @@ const addConta = async (req, res) => {
         return getDadosConta(req, res); // Chama getContas passando a requisição e resposta
     } catch (error) {
         console.error('Erro ao adicionar conta:', error);
-        res.send("Erro ao adicionar a conta.");
+        res.status(400).json({ success: false, message: 'Erro ao adicionar conta' });
+
     }
 };
 
