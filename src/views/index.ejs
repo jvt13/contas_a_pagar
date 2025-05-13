@@ -308,7 +308,7 @@
         console.log('Dados do formulário:', formData);
 
         try {
-            const response = await postDados('form_conta', formData);
+            const response = await postDados('/form_conta', formData);
             console.log('Resposta do servidor:', response);
 
             if (response.sucess) {
