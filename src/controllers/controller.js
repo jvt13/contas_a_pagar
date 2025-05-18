@@ -226,8 +226,12 @@ const gerenciarLimite = async (req, res) => {
 
 const salvarLimite = async (req, res) => {
     const { mes, ano, limite, id, tipo } = req.body;
+    console.log(`salvarLimite() parametros: ${mes}/${ano}/${limite}/${id}/${tipo}`);
     //let valor_convertido = parseFloat(limite).toFixed(2).replace(',', '.'); // Convertendo limite para o formato correto
-    let valor_convertido = parseFloat(limite.replace('R$', '').replace('.', '').replace(',', '.').trim());
+    //let valor_convertido = parseFloat(limite.replace('R$', '').replace('.', '').replace(',', '.').trim());
+
+    //let valor_convertido = parseFloat(limite.replace('R$', '').replace('.', '').replace(',', '.').trim());
+    let valor_convertido = limite;
 
     // Validando a conversão
     if (isNaN(valor_convertido)) {
@@ -235,7 +239,7 @@ const salvarLimite = async (req, res) => {
         return res.status(400).json({ sucess: false, mensagem: 'Limite deve ser um número válido.' });
     }
 
-    valor_convertido = valor_convertido.toFixed(2); // formatando para duas casas decimais
+    //valor_convertido = valor_convertido.toFixed(2); // formatando para duas casas decimais
     console.log('Valor convertido:', valor_convertido);
 
     // Verificação de parâmetros
@@ -337,11 +341,11 @@ const getContaID = async (req, res) => {
 };
 
 const addCartao = async (req, res) => {
-    const { nome, select, vencimento, dia_util } = req.body;
-    console.log(`addCartao() parametros: ${nome}/${select}/${vencimento}/${dia_util}`);
+    const { nome, tipo_cartao, vencimento, dia_util } = req.body;
+    console.log(`addCartao() parametros: ${nome}/${tipo_cartao}/${vencimento}/${dia_util}`);
 
     try {
-        const result = await model_config.insert(nome, select, vencimento, dia_util);
+        const result = await model_config.insert(nome, tipo_cartao, vencimento, dia_util);
         console.log('Cartão inserido:', result);
         return res.json({ sucess: true, mensagem: `Cartão ${nome} inserido com sucesso!` });
     } catch (error) {

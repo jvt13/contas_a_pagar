@@ -18,6 +18,7 @@ router.post('/form_conta', controller.addConta);
 // Rota para marcar conta como paga
 router.post('/marcar-paga', controller.paga); 
 router.post('/salvar_limite', controller.salvarLimite)
+router.put('/salvar_limite', controller.salvarLimite)
 router.post('/add_cartao', controller.addCartao);
 router.put('/update_cartao/:id', controller.updateCartao);
 
