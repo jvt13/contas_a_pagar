@@ -172,6 +172,7 @@ const addConta = async (req, res) => {
 
         console.log('Valor convertido:', valor_convertido);
         const dataFormatada = converterParaFormatoDate(vencimento); // Converte a data para o formato correto
+        console.log('Data formatada:', dataFormatada);
         await model.addConta({ nome, dataFormatada, valor_convertido, categoria, tipo_cartao }); // Adiciona a nova conta
         console.log(`Conta ${nome} inserido com sucesso!!!`)
 
