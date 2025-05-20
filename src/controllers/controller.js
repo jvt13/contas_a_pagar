@@ -163,7 +163,15 @@ const addConta = async (req, res) => {
     const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao } = req.body;
 
     try {
-        await model.addConta({ nome, vencimento, valor, categoria, tipo_cartao }); // Adiciona a nova conta
+        let valor_convertido = 0;
+        if(isNaN(valor)) {
+            valor_convertido = parseFloat(valor.replace('R$', '').replace('.', '').replace(',', '.').trim());
+        }else{
+            valor_convertido = valor
+        }
+
+        console.log('Valor convertido:', valor_convertido);
+        await model.addConta({ nome, vencimento, valor_convertido, categoria, tipo_cartao }); // Adiciona a nova conta
         console.log(`Conta ${nome} inserido com sucesso!!!`)
 
         // Chama getContas para obter todas as contas e renderizar a página

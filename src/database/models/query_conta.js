@@ -31,10 +31,11 @@ const getContas = async (mes, ano) => {
  * @returns {Promise<void>}
  */
 const addConta = async (conta) => {
+    console.log('Adicionando conta:', conta.valor_convertido);
     await pool.query('INSERT INTO contas (nome, vencimento, valor, categoria, tipo_cartao, paga) VALUES ($1, $2, $3, $4, $5, FALSE)', [
         conta.nome,
         conta.vencimento,
-        conta.valor,
+        conta.valor_convertido,
         conta.categoria,
         conta.tipo_cartao
     ]);

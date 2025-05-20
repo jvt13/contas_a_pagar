@@ -12,6 +12,8 @@ const estrutura = require('./src/database/estrutura');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const cors = require('cors');
+
 // Carregando os certificados
 const options = {
     key: fs.readFileSync(path.join(__dirname, 'cert/server.key')),
@@ -35,6 +37,7 @@ app.engine('ejs', ejs.renderFile);
 app.set('view engine', 'ejs');
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.set('views', path.join(__dirname, '/src/views'));
+app.use(cors()); // Habilita CORS para todas as rotas
 
 //app.use(express.static('public'));  // só para garantir que está em public
 
