@@ -171,7 +171,8 @@ const addConta = async (req, res) => {
         }
 
         console.log('Valor convertido:', valor_convertido);
-        await model.addConta({ nome, vencimento, valor_convertido, categoria, tipo_cartao }); // Adiciona a nova conta
+        const dataFormatada = converterParaFormatoDate(vencimento); // Converte a data para o formato correto
+        await model.addConta({ nome, dataFormatada, valor_convertido, categoria, tipo_cartao }); // Adiciona a nova conta
         console.log(`Conta ${nome} inserido com sucesso!!!`)
 
         // Chama getContas para obter todas as contas e renderizar a página
