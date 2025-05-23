@@ -1,489 +1,358 @@
-const { parseISO, format } = require('date-fns');
-const model = require('../database/models/query_conta'); // Importa o módulo de consultas
-const model_config = require('../database/models/query_config'); // Importa o módulo de consultas
-//const pool = require('../database/conexao');
-const { formatarParaBRL, dataAtualFormatada, formatDataBR, converterParaFormatoDate } = require('../utils/util'); // Importa funções utilitárias
+// Controller.js
+import { parseISO, format } from 'date-fns';
+import * as model from '../database/models/query_conta.js';
+import * as model_config from '../database/models/query_config.js';
+import * as model_users from '../database/models/query_users.js';
+import {
+  formatarParaBRL,
+  dataAtualFormatada,
+  formatDataBR,
+  converterParaFormatoDate
+} from '../utils/util.js';
+import { verifyPassword, hashPassword } from '../utils/auth.js';
 
-const getDadosConta = async (req, res) => {
-    let mesSelecionado = req.body.mes || ""; // Pega o mês como string
-    let anoSelecionado = req.body.ano || "";
-    console.log(`--------------------------------Mês selecionado: ${mesSelecionado} - Ano selecionado: ${anoSelecionado}`)
+export const getDadosConta = async (req, res) => {
+  let mesSelecionado = req.body.mes || "";
+  let anoSelecionado = req.body.ano || "";
+  console.log(`--------------------------------Mês selecionado: ${mesSelecionado} - Ano selecionado: ${anoSelecionado}`);
 
-    // Validação dos parâmetros
-    if (!anoSelecionado) {
-        return res.status(400).json({
-            sucess: false,
-            error: "Ano é obrigatório",
-            message: "Por favor, selecione um ano válido"
-        });
+  if (!anoSelecionado) {
+    return res.status(400).json({
+      success: false,
+      error: "Ano é obrigatório",
+      message: "Por favor, selecione um ano válido"
+    });
+  }
+
+  let mesNumero = null;
+  if (mesSelecionado && parseInt(mesSelecionado) >= 0 && parseInt(mesSelecionado) <= 11) {
+    mesNumero = parseInt(mesSelecionado, 10) + 1;
+  }
+
+  try {
+    const contas = await model.getContas(mesNumero, anoSelecionado);
+
+    if (mesNumero !== null) {
+      mesSelecionado = mesNumero - 1;
     }
 
-    // Define uma variável para armazenar o mês ajustado
-    let mesNumero = null;
+    const totalContas = contas.reduce((sum, c) => sum + c.valor, 0);
+    const totalContasPagas = contas.reduce((sum, c) => sum + (c.paga ? c.valor : 0), 0);
+    const totalContasPendentes = contas.reduce((sum, c) => sum + (!c.paga ? c.valor : 0), 0);
 
-    // Verifica se o mês selecionado é um número entre 0 e 11
-    if (mesSelecionado && parseInt(mesSelecionado) >= 0 && parseInt(mesSelecionado) <= 11) {
-        mesNumero = parseInt(mesSelecionado, 10); // Converte para número
-        mesNumero += 1; // Ajusta para correspondência no banco
-    }
+    let limite_gastos = await model.getLimite(mesNumero, anoSelecionado);
+    limite_gastos = limite_gastos ? limite_gastos.limite : 0;
 
-    try {
-        const contas = await model.getContas(mesNumero, anoSelecionado);
+    console.log(`Ano selecionado: ${anoSelecionado} / Mês selecionado: ${mesSelecionado}`);
+    const limiteColor = (mesSelecionado !== '' && mesSelecionado >= 0 && mesSelecionado <= 11)
+      ? obterCor(totalContas, limite_gastos)
+      : null;
 
-        // Ajuste para renderizar corretamente
-        if (mesNumero !== null) {
-            mesSelecionado = mesNumero - 1; // Verifica se existe um mês válido
-        }
+    const anos = await model.getAnos() || [];
+    if (!Array.isArray(anos)) throw new Error('O retorno de getAnos não é um array.');
 
-        // Calcular total de contas
-        const totalContas = contas.reduce((total, conta) => total + conta.valor, 0) || 0;
+    const tipos_cartao = await model_config.selectAll();
 
-        // Calcular total de contas pagas
-        const totalContasPagas = contas.reduce((total, conta) => total + (conta.paga ? conta.valor : 0), 0) || 0;
-
-        // Calcular total de contas pendentes
-        const totalContasPendentes = contas.reduce((total, conta) => total + (!conta.paga ? conta.valor : 0), 0) || 0;
-        console.log('Parametro para o limite: ' + mesNumero + '/' + anoSelecionado)
-        let limite_gastos = await model.getLimite(mesNumero, anoSelecionado);
-
-        if (!limite_gastos) {
-            limite_gastos = 0;
-        } else {
-            limite_gastos = limite_gastos.limite
-            console.log('Limite: ' + limite_gastos)
-        }
-
-        console.log(`Ano selecionado: ${anoSelecionado} / Mês selecionado: ${mesSelecionado}`);
-        const limiteColor = (mesSelecionado !== '' && mesSelecionado >= 0 && mesSelecionado <= 11)
-            ? obterCor(totalContas, limite_gastos)  // Chama a função se um mês específico foi selecionado
-            : null; // Deixa null se "Todos" for selecionado
-        console.log(`Cor ${limiteColor}`);
-
-        const anos = await model.getAnos() || []; // Função para buscar anos no banco
-        console.log("Anos retornados:", anos); // Verifique o que está sendo retornado
-
-        const tipos_cartao = await model_config.selectAll(); // Função para buscar tipos de cartão no banco
-        //console.log("Tipos de cartão retornados:", tipos_cartao); // Verifique o que está sendo retornado
-
-        if (!Array.isArray(anos)) {
-            throw new Error('O retorno de getAnos não é um array.');
-        }
-
-        return res.json({
-            sucess: true,
-            contas,
-            total_contas: totalContas,
-            total_contas_pagas: totalContasPagas,
-            total_contas_pendentes: totalContasPendentes,
-            total_limite: limite_gastos,
-            limiteColor: limiteColor,
-            mesSelecionado: mesSelecionado !== null ? mesSelecionado.toString() : "", // Envia como string para o frontend
-            mensagemSucesso: null,
-            anos: anos,
-            anoSelecionado: anoSelecionado,
-            tipos_cartao: tipos_cartao // Envia os tipos de cartão para o frontend
-        });
-    } catch (err) {
-        console.error('Erro ao buscar contas:', err);
-        return res.status(500).json({
-            sucess: false,
-            error: "Erro ao buscar contas.",
-            message: err.message
-        });
-    }
-}
-// Controlador para obter contas
-const getContas = async (req, res) => {
-    let mesSelecionado = req.query.mes || ""; // Pega o mês como string
-    let anoSelecionado = req.query.ano || "";
-    console.log("Ano: " + anoSelecionado);
-
-    try {
-        mesSelecionado = new Date().getMonth() + 1
-        anoSelecionado = new Date().getFullYear();
-        const contas = await model.getContas(mesSelecionado, anoSelecionado);
-
-        mesSelecionado = mesSelecionado - 1;
-
-        // Calcular total de contas
-        const totalContas = contas.reduce((total, conta) => total + conta.valor, 0) || 0;
-
-        // Calcular total de contas pagas
-        const totalContasPagas = contas.reduce((total, conta) => total + (conta.paga ? conta.valor : 0), 0) || 0;
-
-        // Calcular total de contas pendentes
-        const totalContasPendentes = contas.reduce((total, conta) => total + (!conta.paga ? conta.valor : 0), 0) || 0;
-
-        let limite_gastos = await model.getLimite((mesSelecionado + 1), anoSelecionado);
-
-        if (!limite_gastos) {
-            limite_gastos = 0;
-        } else {
-            limite_gastos = limite_gastos.limite
-            console.log('Limite: ' + limite_gastos)
-        }
-
-        console.log(`Ano selecionado: ${anoSelecionado} / Mês selecionado: ${mesSelecionado}`);
-        const limiteColor = (mesSelecionado !== '' && mesSelecionado >= 0 && mesSelecionado <= 11)
-            ? obterCor(totalContas, limite_gastos)  // Chama a função se um mês específico foi selecionado
-            : null; // Deixa null se "Todos" for selecionado
-        console.log(`Cor ${limiteColor}`);
-
-        const anos = await model.getAnos() || []; // Função para buscar anos no banco
-        console.log("Anos retornados:", anos); // Verifique o que está sendo retornado
-
-        const tipos_cartao = await model_config.selectAll(); // Função para buscar tipos de cartão no banco
-        //console.log("Tipos de cartão retornados:", tipos_cartao); // Verifique o que está sendo retornado
-
-        if (!Array.isArray(anos)) {
-            throw new Error('O retorno de getAnos não é um array.');
-        }
-
-        res.render('index', {
-            contas,
-            total_contas: totalContas,
-            total_contas_pagas: totalContasPagas,
-            total_contas_pendentes: totalContasPendentes,
-            total_limite: limite_gastos,
-            limiteColor: limiteColor,
-            mesSelecionado: mesSelecionado !== null ? mesSelecionado.toString() : "", // Envia como string para o frontend
-            mensagemSucesso: null,
-            anos: anos,
-            anoSelecionado: anoSelecionado,
-            cartoes: tipos_cartao // Envia os tipos de cartão para o frontend
-        });
-    } catch (err) {
-        console.error('Erro ao buscar contas:', err);
-        res.send("Erro ao buscar contas.");
-    }
+    return res.json({
+      success: true,
+      contas,
+      total_contas: totalContas,
+      total_contas_pagas: totalContasPagas,
+      total_contas_pendentes: totalContasPendentes,
+      total_limite: limite_gastos,
+      limiteColor,
+      mesSelecionado: mesSelecionado !== null ? mesSelecionado.toString() : "",
+      mensagemsuccesso: null,
+      anos,
+      anoSelecionado,
+      tipos_cartao
+    });
+  } catch (err) {
+    console.error('Erro ao buscar contas:', err);
+    return res.status(500).json({
+      success: false,
+      error: "Erro ao buscar contas.",
+      message: err.message
+    });
+  }
 };
 
-// Função para adicionar nova conta ao banco de dados
-const addConta = async (req, res) => {
-    const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao } = req.body;
+export const getContas = async (req, res) => {
+  let mesSelecionado = new Date().getMonth() + 1;
+  let anoSelecionado = new Date().getFullYear();
+  try {
+    const contas = await model.getContas(mesSelecionado, anoSelecionado);
+    mesSelecionado = mesSelecionado - 1;
 
-    try {
-        let valor_convertido = 0;
-        if(isNaN(valor)) {
-            valor_convertido = parseFloat(valor.replace('R$', '').replace('.', '').replace(',', '.').trim());
-        }else{
-            valor_convertido = valor
-        }
+    const totalContas = contas.reduce((sum, c) => sum + c.valor, 0);
+    const totalContasPagas = contas.reduce((sum, c) => sum + (c.paga ? c.valor : 0), 0);
+    const totalContasPendentes = contas.reduce((sum, c) => sum + (!c.paga ? c.valor : 0), 0);
 
-        console.log('Valor convertido:', valor_convertido);
-        const dataFormatada = converterParaFormatoDate(vencimento); // Converte a data para o formato correto
-        console.log('Data formatada:', dataFormatada);
-        await model.addConta({ nome, dataFormatada, valor_convertido, categoria, tipo_cartao }); // Adiciona a nova conta
-        console.log(`Conta ${nome} inserido com sucesso!!!`)
+    let limite_gastos = await model.getLimite(mesSelecionado + 1, anoSelecionado);
+    limite_gastos = limite_gastos ? limite_gastos.limite : 0;
 
-        // Chama getContas para obter todas as contas e renderizar a página
-        // Aqui, você pode passar o mês e ano selecionados para que a paginação e filtragem funcione corretamente
-        return getDadosConta(req, res); // Chama getContas passando a requisição e resposta
-    } catch (error) {
-        console.error('Erro ao adicionar conta:', error);
-        res.status(400).json({ success: false, message: 'Erro ao adicionar conta' });
+    const limiteColor = (mesSelecionado >= 0 && mesSelecionado <= 11)
+      ? obterCor(totalContas, limite_gastos)
+      : null;
 
-    }
+    const anos = await model.getAnos() || [];
+    if (!Array.isArray(anos)) throw new Error('O retorno de getAnos não é um array.');
+
+    const tipos_cartao = await model_config.selectAll();
+
+    return res.render('index', {
+      contas,
+      total_contas: totalContas,
+      total_contas_pagas: totalContasPagas,
+      total_contas_pendentes: totalContasPendentes,
+      total_limite: limite_gastos,
+      limiteColor,
+      mesSelecionado: mesSelecionado.toString(),
+      mensagemsuccesso: null,
+      anos,
+      anoSelecionado,
+      cartoes: tipos_cartao
+    });
+  } catch (err) {
+    console.error('Erro ao buscar contas:', err);
+    return res.send("Erro ao buscar contas.");
+  }
 };
 
-// Controlador para visualizar contas pagas
-const getContasPagas = async (req, res) => {
-    try {
-        const contasPagas = await model.getContasPagas(); // Usa a nova função do modelo
-        const totalValores = contasPagas.reduce((total, conta) => total + conta.valor, 0);
-
-        res.render('contas_pagas', { contasPagas, totalValores });
-    } catch (err) {
-        console.error('Erro ao buscar contas pagas:', err);
-        res.send("Erro ao buscar contas pagas.");
-    }
+export const addConta = async (req, res) => {
+  const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao } = req.body;
+  try {
+    const valor_convertido = isNaN(valor)
+      ? parseFloat(valor.replace(/[R$\.]/g, '').replace(',', '.').trim())
+      : valor;
+    const dataFormatada = converterParaFormatoDate(vencimento);
+    await model.addConta({ nome, dataFormatada, valor_convertido, categoria, tipo_cartao });
+    return getDadosConta(req, res);
+  } catch (error) {
+    console.error('Erro ao adicionar conta:', error);
+    return res.status(400).json({ success: false, message: 'Erro ao adicionar conta' });
+  }
 };
 
-// Controlador para visualizar contas pendentes
-const getContasPendentes = async (req, res) => {
-    try {
-        const contasPendentes = await model.getContasPendentes(); // Usa a nova função do modelo
-        const totalValores = contasPendentes.reduce((total, conta) => total + conta.valor, 0);
-
-        res.render('contas_pendentes', { contasPendentes, totalValores });
-    } catch (err) {
-        console.error('Erro ao buscar contas pendentes:', err);
-        res.send("Erro ao buscar contas pendentes.");
-    }
+export const getContasPagas = async (req, res) => {
+  try {
+    const contasPagas = await model.getContasPagas();
+    const totalValores = contasPagas.reduce((sum, c) => sum + c.valor, 0);
+    return res.render('contas_pagas', { contasPagas, totalValores });
+  } catch (err) {
+    console.error('Erro ao buscar contas pagas:', err);
+    return res.send("Erro ao buscar contas pagas.");
+  }
 };
 
-// Controlador para marcar conta como paga ou pendente
-const alteraStatusConta = async (req, res) => {
-    const index = req.body.index; // ID da conta a ser atualizada
-    const check = req.body.paga; // Verifica se o valor é uma string 'true', ajustando para booleano
-    const mes = req.body.mes;
-
-    console.log(`alteraStatusConta() - Conta ID: ${index}, Mês: ${mes}, Paga: ${check}`);
-    try {
-        await model.updateContas(index, check); // Atualiza o status da conta
-        console.log(`Conta ${index} marcada como ${check ? 'paga' : 'pendente'}!`);
-        res.json({ sucess: true, message: 'Status atualizado com sucesso' });
-    } catch (err) {
-        console.error('Erro ao marcar conta:', err);
-        res.status(500).json({ sucess: false, message: 'Erro ao alterar o status da conta' });
-    }
+export const getContasPendentes = async (req, res) => {
+  try {
+    const contasPendentes = await model.getContasPendentes();
+    const totalValores = contasPendentes.reduce((sum, c) => sum + c.valor, 0);
+    return res.render('contas_pendentes', { contasPendentes, totalValores });
+  } catch (err) {
+    console.error('Erro ao buscar contas pendentes:', err);
+    return res.send("Erro ao buscar contas pendentes.");
+  }
 };
 
-const gerenciarLimite = async (req, res) => {
-    const anos = await model.getAnos(); // Função para buscar anos no banco
-    res.render('partials/gerenciar_limite', { anos });
-}
-
-const salvarLimite = async (req, res) => {
-    const { mes, ano, limite, id, tipo } = req.body;
-    console.log(`salvarLimite() parametros: ${mes}/${ano}/${limite}/${id}/${tipo}`);
-    //let valor_convertido = parseFloat(limite).toFixed(2).replace(',', '.'); // Convertendo limite para o formato correto
-    //let valor_convertido = parseFloat(limite.replace('R$', '').replace('.', '').replace(',', '.').trim());
-
-    //let valor_convertido = parseFloat(limite.replace('R$', '').replace('.', '').replace(',', '.').trim());
-    let valor_convertido = limite;
-
-    // Validando a conversão
-    if (isNaN(valor_convertido)) {
-        console.error('Valor de limite inválido:', limite);
-        return res.status(400).json({ sucess: false, mensagem: 'Limite deve ser um número válido.' });
-    }
-
-    //valor_convertido = valor_convertido.toFixed(2); // formatando para duas casas decimais
-    console.log('Valor convertido:', valor_convertido);
-
-    // Verificação de parâmetros
-    if (!mes || !ano || !limite || (tipo === 'update' && !id)) {
-        console.error('Parâmetros inválidos recebidos:', req.body);
-        return res.status(400).json({ sucess: false, mensagem: 'Parâmetros inválidos.' });
-    }
-
-    //console.log('Parâmetros recebidos:', { mes, ano, limite, id, tipo });
-
-    try {
-        if (tipo === 'insert') {
-            const result = await model.insertLimite(mes, ano, valor_convertido);
-            console.log('Limite inserido:', result);
-            return res.json({ sucess: true, mensagem: `Limite de ${mes}/${ano} inserido com sucesso!` });
-        } else if (tipo === 'update') {
-            const result = await model.updateLimite(id, valor_convertido);
-            console.log('Resultado da atualização:', result);
-
-            if (result) {
-                return res.json({ sucess: true, mensagem: `Limite de ${mes}/${ano} atualizado com sucesso!` });
-            } else {
-                console.error('Nenhuma linha foi atualizada para ID:', id);
-                return res.status(404).json({ sucess: false, mensagem: 'Nenhum limite encontrado para atualização.' });
-            }
-        } else {
-            console.error('Tipo inválido recebido:', tipo);
-            return res.status(400).json({ sucess: false, mensagem: 'Tipo de operação inválido.' });
-        }
-    } catch (error) {
-        console.error('Erro ao salvar limite:', error.message);
-        return res.status(500).json({ sucess: false, mensagem: 'Erro ao salvar limite: ' + error.message });
-    }
+export const alteraStatusConta = async (req, res) => {
+  const { index, paga: check } = req.body;
+  try {
+    await model.updateContas(index, check);
+    return res.json({ success: true, message: 'Status atualizado com sucesso' });
+  } catch (err) {
+    console.error('Erro ao marcar conta:', err);
+    return res.status(500).json({ success: false, message: 'Erro ao alterar o status da conta' });
+  }
 };
 
-const getLimite = async (req, res) => {
-    const { mes, ano } = req.body;
-    console.log(`getLimite() parametros: ${mes}/${ano}`);
-
-    try {
-        const result = await model.getLimite(mes, ano);
-
-        if (!result) {
-            console.log('Limite não encontrado, retornando id 0.');
-            return res.json({ success: true, id: 0 }); // Retornando id 0 em vez de um erro
-        }
-
-        console.log('Encontrou limite. Retornando requisição - ' + result.id);
-        return res.json({ success: true, id: result.id });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, mensagem: 'Erro ao processar a requisição' });
-    }
+export const gerenciarLimite = (req, res) => {
+  model.getAnos()
+    .then(anos => res.render('partials/gerenciar_limite', { anos }))
+    .catch(err => {
+      console.error('Erro ao buscar anos para limite:', err);
+      res.send("Erro ao carregar limites.");
+    });
 };
 
-const excluirConta = async (req, res) => {
-    const id = req.params.id; // ID da conta a ser excluída
-    console.log('ID recebido para exclusão:', id);
-
-    try {
-        const response = await model.excluirConta(id); // Chama a função para excluir a conta
-
-        if (!response) {
-            console.log('Nenhuma conta excluída, ID não encontrado:', id);
-            return res.status(404).json({ success: false, mensagem: 'Conta não encontrada.' });
-        }
-        console.log(`Conta ${id} excluída com sucesso!`);
-        res.json({ success: true, mensagem: 'Conta excluída com sucesso!' });
-    } catch (error) {
-        console.error('Erro ao excluir conta:', error);
-        res.status(500).json({ success: false, mensagem: 'Erro ao excluir conta.' });
+export const salvarLimite = async (req, res) => {
+  const { mes, ano, limite, id, tipo } = req.body;
+  let valor_convertido = limite;
+  if (isNaN(valor_convertido)) {
+    return res.status(400).json({ success: false, mensagem: 'Limite deve ser um número válido.' });
+  }
+  if (!mes || !ano || !limite || (tipo === 'update' && !id)) {
+    return res.status(400).json({ success: false, mensagem: 'Parâmetros inválidos.' });
+  }
+  try {
+    if (tipo === 'insert') {
+      await model.insertLimite(mes, ano, valor_convertido);
+      return res.json({ success: true, mensagem: `Limite de ${mes}/${ano} inserido com sucesso!` });
+    } else {
+      const result = await model.updateLimite(id, valor_convertido);
+      if (result) {
+        return res.json({ success: true, mensagem: `Limite de ${mes}/${ano} atualizado com sucesso!` });
+      }
+      return res.status(404).json({ success: false, mensagem: 'Nenhum limite encontrado para atualização.' });
     }
-}
-
-const getContaID = async (req, res) => {
-    const id = req.params.id;
-    try {
-        const conta = await model.getContaID(id);
-
-        if (!conta) {
-            return res.status(404).json({
-                success: false,
-                message: 'Conta não encontrada'
-            });
-        }
-
-        // Retorna em um formato consistente
-        res.json({
-            success: true,
-            data: conta // Encapsula a conta em um campo 'data'
-        });
-    } catch (error) {
-        console.error('Erro no backend:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erro interno no servidor'
-        });
-    }
+  } catch (error) {
+    console.error('Erro ao salvar limite:', error);
+    return res.status(500).json({ success: false, mensagem: 'Erro ao salvar limite: ' + error.message });
+  }
 };
 
-const addCartao = async (req, res) => {
-    const { nome, tipo_cartao, vencimento, dia_util } = req.body;
-    console.log(`addCartao() parametros: ${nome}/${tipo_cartao}/${vencimento}/${dia_util}`);
-
-    try {
-        const result = await model_config.insert(nome, tipo_cartao, vencimento, dia_util);
-        console.log('Cartão inserido:', result);
-        return res.json({ sucess: true, mensagem: `Cartão ${nome} inserido com sucesso!` });
-    } catch (error) {
-        console.error('Erro ao inserir cartão:', error);
-        return res.status(500).json({ sucess: false, mensagem: 'Erro ao inserir cartão: ' + error.message });
-    }
-}
-
-const getCartoes = async (req, res) => {
-    const cartoes = await model_config.selectAll();
-    res.json({ sucess: true, data: cartoes });
-}
-
-const excluirCartao = async (req, res) => {
-    const id = req.params.id;
-    console.log('ID recebido para exclusão:', id);
-
-    try {
-        const response = await model_config.deleteId(id);
-        console.log('Resposta da exclusão:', response);
-        res.json({ sucess: true, mensagem: 'Cartão excluído com sucesso!' });
-    } catch (error) {
-        console.error('Erro ao excluir cartão:', error);
-        res.status(500).json({ sucess: false, mensagem: 'Erro ao excluir cartão: ' + error.message });
-    }
-}
-
-const getCartaoID = async (req, res) => {
-    const id = req.params.id;
-    console.log('ID recebido para consulta:', id);
-    const data = dataAtualFormatada(); // Data atual
-    const dia = data.split('/')[0]; // Dia atual
-    const mes = data.split('/')[1]; // Mês atual
-    const ano = data.split('/')[2]; // Ano atual
-
-    console.log(`Data atual: ${dia}/${mes}/${ano}`);
-    console.log(`Mês atual: ${mes}`);
-    try {
-        const cartao = await model_config.selectId(id);
-
-        const vencimento = cartao.vencimento; // Vencimento do cartão
-        const dia_util = cartao.dia_util; // Dia útil do cartão
-
-        console.log(`Vencimento do cartão: ${vencimento}`);
-        console.log(`Dia útil do cartão: ${dia_util}`);
-
-        // NOVO BLOCO DE SUBSTITUIÇÃO
-        const novoMes = (parseInt(mes)).toString().padStart(2, '0');
-        const vencDia = cartao.vencimento.toString().padStart(2, '0');
-
-        // Se dia >= dia_util, incrementa o mês
-        let novoMesFinal = parseInt(mes);
-        if (parseInt(dia) >= parseInt(dia_util)) {
-            novoMesFinal++;
-            if (novoMesFinal > 12) {
-                novoMesFinal = 1;
-                ano = (parseInt(ano) + 1).toString();
-            }
-        }
-        const vencimentoFormatado = `${ano}-${String(novoMesFinal).padStart(2, '0')}-${vencDia}`;
-
-        // Atualiza no objeto
-        cartao.vencimento = vencimentoFormatado;
-
-
-        if (!cartao) {
-            return res.status(404).json({
-                success: false,
-                message: 'Cartão não encontrado'
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            data: cartao
-        });
-    } catch (error) {
-        console.error('Erro no backend:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erro interno no servidor'
-        });
-    }
+export const getLimite = async (req, res) => {
+  const { mes, ano } = req.body;
+  try {
+    const result = await model.getLimite(mes, ano);
+    return res.json({ success: true, id: result ? result.id : 0 });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ success: false, mensagem: 'Erro ao processar a requisição' });
+  }
 };
 
-const updateCartao = async (req, res) => {
-    const id = req.params.id;
-    const { nome, tipo_cartao, vencimento, dia_util } = req.body;
-    console.log(`updateCartao() parametros: ${id}/${nome}/${vencimento}/${dia_util}`);
-
-    try {
-        const result = await model_config.update(id, nome, tipo_cartao, vencimento, dia_util);
-        console.log('Cartão atualizado:', result);
-        return res.json({ sucess: true, mensagem: `Cartão ${nome} atualizado com sucesso!` });
-    } catch (error) {
-        console.error('Erro ao atualizar cartão:', error);
-        return res.status(500).json({ sucess: false, mensagem: 'Erro ao atualizar cartão: ' + error.message });
+export const excluirConta = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const response = await model.excluirConta(id);
+    if (!response) {
+      return res.status(404).json({ success: false, mensagem: 'Conta não encontrada.' });
     }
+    return res.json({ success: true, mensagem: 'Conta excluída com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao excluir conta:', error);
+    return res.status(500).json({ success: false, mensagem: 'Erro ao excluir conta.' });
+  }
 };
 
-// Controladores exportados para uso em rotas
-module.exports = {
-    home: getContas,
-    addConta,
-    paga: alteraStatusConta,
-    getContasPagas,
-    getContasPendentes,
-    gerenciarLimite,
-    salvarLimite,
-    getLimite,
-    getDadosConta,
-    excluirConta,
-    getContaID,
-    addCartao,
-    getCartoes,
-    excluirCartao,
-    getCartaoID,
-    updateCartao
+export const getContaID = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const conta = await model.getContaID(id);
+    if (!conta) {
+      return res.status(404).json({ success: false, message: 'Conta não encontrada' });
+    }
+    return res.json({ success: true, data: conta });
+  } catch (error) {
+    console.error('Erro no backend:', error);
+    return res.status(500).json({ success: false, message: 'Erro interno no servidor' });
+  }
 };
 
+export const addCartao = async (req, res) => {
+  const { nome, tipo_cartao, vencimento, dia_util } = req.body;
+  try {
+    await model_config.insert(nome, tipo_cartao, vencimento, dia_util);
+    return res.json({ success: true, mensagem: `Cartão ${nome} inserido com sucesso!` });
+  } catch (error) {
+    console.error('Erro ao inserir cartão:', error);
+    return res.status(500).json({ success: false, mensagem: 'Erro ao inserir cartão: ' + error.message });
+  }
+};
 
-// Função para determinar a cor do card
+export const getCartoes = (req, res) => {
+  model_config.selectAll()
+    .then(cartoes => res.json({ success: true, data: cartoes }))
+    .catch(err => {
+      console.error('Erro ao buscar cartões:', err);
+      res.status(500).json({ success: false, mensagem: 'Erro ao buscar cartões.' });
+    });
+};
+
+export const excluirCartao = async (req, res) => {
+  const { id } = req.params;
+  try {
+    await model_config.deleteId(id);
+    return res.json({ success: true, mensagem: 'Cartão excluído com sucesso!' });
+  } catch (error) {
+    console.error('Erro ao excluir cartão:', error);
+    return res.status(500).json({ success: false, mensagem: 'Erro ao excluir cartão: ' + error.message });
+  }
+};
+
+export const getCartaoID = async (req, res) => {
+  const { id } = req.params;
+  const [dia, mes, ano] = dataAtualFormatada().split('/');
+  try {
+    const cartao = await model_config.selectId(id);
+    if (!cartao) {
+      return res.status(404).json({ success: false, message: 'Cartão não encontrado' });
+    }
+
+    let novoMesFinal = parseInt(mes, 10);
+    if (parseInt(dia, 10) >= parseInt(cartao.dia_util, 10)) {
+      novoMesFinal = novoMesFinal % 12 + 1;
+    }
+    const vencDia = cartao.vencimento.toString().padStart(2, '0');
+    cartao.vencimento = `${ano}-${String(novoMesFinal).padStart(2, '0')}-${vencDia}`;
+
+    return res.status(200).json({ success: true, data: cartao });
+  } catch (error) {
+    console.error('Erro no backend:', error);
+    return res.status(500).json({ success: false, message: 'Erro interno no servidor' });
+  }
+};
+
+export const updateCartao = async (req, res) => {
+  const { id } = req.params;
+  const { nome, tipo_cartao, vencimento, dia_util } = req.body;
+  try {
+    await model_config.update(id, nome, tipo_cartao, vencimento, dia_util);
+    return res.json({ success: true, mensagem: `Cartão ${nome} atualizado com sucesso!` });
+  } catch (error) {
+    console.error('Erro ao atualizar cartão:', error);
+    return res.status(500).json({ success: false, mensagem: 'Erro ao atualizar cartão: ' + error.message });
+  }
+};
+
+export const autenticarLogin = async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await model_users.selectEmail(email);
+    if (!user) return res.status(404).json({ success: false, mensagem: 'Usuário não encontrado' });
+
+    const isValid = verifyPassword(password, user.salt, user.hash);
+    if (!isValid) return res.status(401).json({ success: false, mensagem: 'Senha incorreta' });
+
+    return res.json({
+      success: true,
+      data: {
+        userId: user.id
+      }, mensagem: `Usuário ${email} autenticado com sucesso!`
+    });
+  } catch (error) {
+    console.error('Erro ao autenticar usuário:', error);
+    return res.status(500).json({ success: false, mensagem: 'Erro ao autenticar usuário: ' + error.message });
+  }
+};
+
+export const register = async (req, res) => {
+  const { name, userName, email, password } = req.body;
+  const userAgent = req.headers['user-agent'];
+  const { salt, hash } = hashPassword(password);
+  try {
+    const result = await model_users.insert(name, userName, email, salt, hash, userAgent);
+    const userId = result.id;
+
+    const { id: orgId, chave } = await model_users.createOrganization();
+
+    await model_users.updateUserOrganization(userId, orgId);
+
+    return res.status(201).json({
+      success: true,
+      data: { userId, organizationId: orgId, organizationKey: chave }
+    });
+
+  } catch (error) {
+    console.error('Erro ao registrar usuário:', error);
+    return res.status(500).json({ success: false, mensagem: 'Erro ao registrar usuário: ' + error.message });
+  }
+};
+
 function obterCor(total, limite) {
-    console.log(`Total contas: ${total} - Limite: ${limite}`)
-    if (total >= limite) {
-        return 'red'; // Vermelho se ultrapassou o limite
-    } else if (total >= limite - 1000) {
-        return 'yellow'; // Amarelo se estiver perto do limite
-    }
-    return '#e0f2fe'; // Cor padrão (ou qualquer outra cor que você gostaria)
+  if (total >= limite) return 'red';
+  if (total >= limite - 1000) return 'yellow';
+  return '#e0f2fe';
 }
