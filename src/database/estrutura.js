@@ -94,7 +94,7 @@ export async function createTablesIfNotExist() {
       organizacao_compartilhada INTEGER REFERENCES organizations(id) ON DELETE SET NULL
     );
 
-    CREATE TABLE IF NOT EXISTS organizations (
+    CREATE TABLE IF NOT EXISTS public.organizations (
         id SERIAL PRIMARY KEY,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         chave VARCHAR(16) NOT NULL DEFAULT substring(md5(random()::text), 1, 16),
