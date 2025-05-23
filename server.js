@@ -42,10 +42,22 @@ app.use(cors());
 app.use('/', router);
 
 // Setup do banco de dados
-(async () => {
-  await estrutura.createDatabaseIfNotExists();
-  await estrutura.createTablesIfNotExist();
-})();
+async function initialize() {
+  try {
+    console.log("🔄 Iniciando verificação do banco de dados...");
+    await estrutura.createDatabaseIfNotExists();
+    console.log("✔ Banco de dados verificado/criado");
+    await estrutura.createTablesIfNotExist();
+    console.log("✔ Tabelas verificadas/criadas");
+
+    startServer(PORT);
+  } catch (error) {
+    console.error("❌ ERRO NA INICIALIZAÇÃO DO BANCO:", error);
+    //process.exit(1); // Descomente se quiser encerrar o servidor em caso de erro
+  }
+}
+
+
 
 // Inicialização do servidor com verificação de porta
 function startServer(port) {
@@ -67,4 +79,7 @@ function startServer(port) {
   });
 }
 
-startServer(PORT);
+initialize().catch(err => {
+  console.error("Falha crítica na inicialização:", err);
+  process.exit(1);
+});
