@@ -72,6 +72,13 @@ export async function createTablesIfNotExist() {
       conta VARCHAR NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS public.organizations (
+        id SERIAL PRIMARY KEY,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        chave VARCHAR(16) NOT NULL DEFAULT substring(md5(random()::text), 1, 16),
+        CONSTRAINT organizations_chave_unique UNIQUE(chave)
+    );
+
     CREATE TABLE IF NOT EXISTS public.users (
       id SERIAL PRIMARY KEY,
       nome_completo VARCHAR(150) NOT NULL,
@@ -92,13 +99,6 @@ export async function createTablesIfNotExist() {
       verificacao_email BOOLEAN DEFAULT FALSE,
       organizacao INTEGER REFERENCES organizations(id) ON DELETE SET NULL,
       organizacao_compartilhada INTEGER REFERENCES organizations(id) ON DELETE SET NULL
-    );
-
-    CREATE TABLE IF NOT EXISTS public.organizations (
-        id SERIAL PRIMARY KEY,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        chave VARCHAR(16) NOT NULL DEFAULT substring(md5(random()::text), 1, 16),
-        CONSTRAINT organizations_chave_unique UNIQUE(chave)
     );
 
     CREATE TABLE IF NOT EXISTS public.tipo_cartao (
