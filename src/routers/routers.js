@@ -25,8 +25,8 @@ router.put('/update_cartao/:id', controller.updateCartao);
 /*--------- Organization ---------------- */
 router.post('/user/organization/share', userController.updateOrgaUser);
 /*----- Usuarios ----- */
-router.post('/auth/login', controller.autenticarLogin);
-router.post('/auth/register', controller.register);
+router.post('/auth/login', userController.autenticarLogin);
+router.post('/auth/register', userController.register);
 
 /*---------------Delete-------------------*/
 router.delete('/delete_conta/:id', controller.excluirConta);

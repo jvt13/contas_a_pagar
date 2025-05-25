@@ -9,18 +9,22 @@ import { formatarParaBRL } from '../../utils/util.js';
  * @param {number} ano - Ano para filtrar os resultados (opcional).
  * @returns {Promise<Array>} Lista de contas.
  */
-export async function getContas(mes, ano) {
+export async function getContas(mes, ano, organization) {
   const mesInt = Number.isInteger(parseInt(mes)) ? parseInt(mes) : null;
   const anoInt = Number.isInteger(parseInt(ano)) ? parseInt(ano) : null;
+  const key_share = organization;
+
+  console.log("Chave: "+ key_share)
 
   const result = await pool.query(
     `
       SELECT * FROM contas
       WHERE ($1::int IS NULL OR EXTRACT(MONTH FROM vencimento) = $1::int)
       AND ($2::int IS NULL OR EXTRACT(YEAR FROM vencimento) = $2::int)
+      AND organization = $3
       ORDER BY vencimento
     `,
-    [mesInt, anoInt]
+    [mesInt, anoInt, key_share]
   );
 
   return result.rows.map(conta => ({
@@ -38,8 +42,8 @@ export async function getContas(mes, ano) {
 export async function addConta(conta) {
   console.log('Adicionando conta:', conta);
   await pool.query(
-    'INSERT INTO contas (nome, vencimento, valor, categoria, tipo_cartao, paga) VALUES ($1, $2, $3, $4, $5, FALSE)',
-    [conta.nome, conta.dataFormatada, conta.valor_convertido, conta.categoria, conta.tipo_cartao]
+    'INSERT INTO contas (nome, vencimento, valor, categoria, tipo_cartao, paga, organization) VALUES ($1, $2, $3, $4, $5, FALSE, $6)',
+    [conta.nome, conta.dataFormatada, conta.valor_convertido, conta.categoria, conta.tipo_cartao, conta.organization]
   );
 }
 
@@ -71,7 +75,7 @@ export async function getLimiteAll(mes, ano) {
   return result.rows.length > 0 ? result.rows[0].limite : 0;
 }
 
-export async function getLimite(mes, ano) {
+export async function getLimite(mes, ano, organization) {
   console.log(`Ano: ${ano} Mês: ${mes}`);
   const mesInt = parseInt(mes);
   const anoInt = parseInt(ano);
@@ -79,18 +83,18 @@ export async function getLimite(mes, ano) {
     throw new Error('O mês ou o ano fornecido não são válidos.');
   }
 
-  const query = 'SELECT id, limite FROM public.limites WHERE mes = $1 AND ano = $2 LIMIT 1';
-  const result = await pool.query(query, [mesInt, anoInt]);
+  const query = 'SELECT id, limite FROM public.limites WHERE mes = $1 AND ano = $2 AND organization = $3 LIMIT 1';
+  const result = await pool.query(query, [mesInt, anoInt, organization]);
   return result.rows.length > 0
     ? { id: result.rows[0].id, limite: result.rows[0].limite }
     : null;
 }
 
-export async function insertLimite(mes, ano, limite) {
-  const query = 'INSERT INTO public.limites (mes, ano, limite) VALUES ($1, $2, $3) RETURNING id';
+export async function insertLimite(mes, ano, limite, conta_user, organization) {
+  const query = 'INSERT INTO public.limites (mes, ano, limite, conta_user, organization) VALUES ($1, $2, $3, $4, $5) RETURNING id';
   console.log(`Mês ${mes}/${ano} limite: ${limite}`);
   try {
-    const result = await pool.query(query, [mes, ano, limite]);
+    const result = await pool.query(query, [mes, ano, limite, conta_user, organization]);
     if (result.rows.length > 0) {
       return result.rows[0].id;
     }

@@ -14,7 +14,9 @@ import { verifyPassword, hashPassword } from '../utils/auth.js';
 export const getDadosConta = async (req, res) => {
   let mesSelecionado = req.body.mes || "";
   let anoSelecionado = req.body.ano || "";
+  let organization = req.body.organization || "";
   console.log(`--------------------------------Mês selecionado: ${mesSelecionado} - Ano selecionado: ${anoSelecionado}`);
+  console.log('Organização: '+ organization)
 
   if (!anoSelecionado) {
     return res.status(400).json({
@@ -30,7 +32,7 @@ export const getDadosConta = async (req, res) => {
   }
 
   try {
-    const contas = await model.getContas(mesNumero, anoSelecionado);
+    const contas = await model.getContas(mesNumero, anoSelecionado, organization);
 
     if (mesNumero !== null) {
       mesSelecionado = mesNumero - 1;
@@ -40,7 +42,7 @@ export const getDadosConta = async (req, res) => {
     const totalContasPagas = contas.reduce((sum, c) => sum + (c.paga ? c.valor : 0), 0);
     const totalContasPendentes = contas.reduce((sum, c) => sum + (!c.paga ? c.valor : 0), 0);
 
-    let limite_gastos = await model.getLimite(mesNumero, anoSelecionado);
+    let limite_gastos = await model.getLimite(mesNumero, anoSelecionado, organization);
     limite_gastos = limite_gastos ? limite_gastos.limite : 0;
 
     console.log(`Ano selecionado: ${anoSelecionado} / Mês selecionado: ${mesSelecionado}`);
@@ -120,13 +122,14 @@ export const getContas = async (req, res) => {
 };
 
 export const addConta = async (req, res) => {
-  const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao } = req.body;
+  const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao, organization } = req.body;
+  console.log('Organization: '+ organization)
   try {
     const valor_convertido = isNaN(valor)
       ? parseFloat(valor.replace(/[R$\.]/g, '').replace(',', '.').trim())
       : valor;
     const dataFormatada = converterParaFormatoDate(vencimento);
-    await model.addConta({ nome, dataFormatada, valor_convertido, categoria, tipo_cartao });
+    await model.addConta({ nome, dataFormatada, valor_convertido, categoria, tipo_cartao, organization });
     return getDadosConta(req, res);
   } catch (error) {
     console.error('Erro ao adicionar conta:', error);
@@ -177,7 +180,7 @@ export const gerenciarLimite = (req, res) => {
 };
 
 export const salvarLimite = async (req, res) => {
-  const { mes, ano, limite, id, tipo } = req.body;
+  const { mes, ano, limite, id, user, organization, tipo } = req.body;
   let valor_convertido = limite;
   if (isNaN(valor_convertido)) {
     return res.status(400).json({ success: false, mensagem: 'Limite deve ser um número válido.' });
@@ -187,7 +190,7 @@ export const salvarLimite = async (req, res) => {
   }
   try {
     if (tipo === 'insert') {
-      await model.insertLimite(mes, ano, valor_convertido);
+      await model.insertLimite(mes, ano, valor_convertido, user, organization);
       return res.json({ success: true, mensagem: `Limite de ${mes}/${ano} inserido com sucesso!` });
     } else {
       const result = await model.updateLimite(id, valor_convertido);
@@ -203,9 +206,9 @@ export const salvarLimite = async (req, res) => {
 };
 
 export const getLimite = async (req, res) => {
-  const { mes, ano } = req.body;
+  const { mes, ano, organization } = req.body;
   try {
-    const result = await model.getLimite(mes, ano);
+    const result = await model.getLimite(mes, ano, organization);
     return res.json({ success: true, id: result ? result.id : 0 });
   } catch (error) {
     console.error(error);
@@ -304,50 +307,6 @@ export const updateCartao = async (req, res) => {
   } catch (error) {
     console.error('Erro ao atualizar cartão:', error);
     return res.status(500).json({ success: false, mensagem: 'Erro ao atualizar cartão: ' + error.message });
-  }
-};
-
-export const autenticarLogin = async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const user = await model_users.selectEmail(email);
-    if (!user) return res.status(404).json({ success: false, mensagem: 'Usuário não encontrado' });
-
-    const isValid = verifyPassword(password, user.salt, user.hash);
-    if (!isValid) return res.status(401).json({ success: false, mensagem: 'Senha incorreta' });
-
-    return res.json({
-      success: true,
-      data: {
-        userId: user.id
-      }, mensagem: `Usuário ${email} autenticado com sucesso!`
-    });
-  } catch (error) {
-    console.error('Erro ao autenticar usuário:', error);
-    return res.status(500).json({ success: false, mensagem: 'Erro ao autenticar usuário: ' + error.message });
-  }
-};
-
-export const register = async (req, res) => {
-  const { name, userName, email, password } = req.body;
-  const userAgent = req.headers['user-agent'];
-  const { salt, hash } = hashPassword(password);
-  try {
-    const result = await model_users.insert(name, userName, email, salt, hash, userAgent);
-    const userId = result.id;
-
-    const { id: orgId, chave } = await model_users.createOrganization();
-
-    await model_users.updateUserOrganization(userId, orgId);
-
-    return res.status(201).json({
-      success: true,
-      data: { userId, organizationId: orgId, organizationKey: chave }
-    });
-
-  } catch (error) {
-    console.error('Erro ao registrar usuário:', error);
-    return res.status(500).json({ success: false, mensagem: 'Erro ao registrar usuário: ' + error.message });
   }
 };
 

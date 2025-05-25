@@ -57,6 +57,8 @@ export async function createTablesIfNotExist() {
       categoria VARCHAR(50),
       tipo_cartao VARCHAR(50),
       paga BOOLEAN DEFAULT FALSE,
+      conta_user VARCHAR(100),
+      organization VARCHAR(100),
       data_inclusao TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP(0)
     );
 
@@ -64,12 +66,16 @@ export async function createTablesIfNotExist() {
       id SERIAL PRIMARY KEY,
       mes INTEGER NOT NULL,
       ano INTEGER NOT NULL,
-      limite NUMERIC(10,2) NOT NULL
+      limite NUMERIC(10,2) NOT NULL,
+      conta_user VARCHAR(100),
+      organization VARCHAR(100)
     );
 
     CREATE TABLE IF NOT EXISTS public.tipo_contas_fixa (
       id SERIAL PRIMARY KEY,
-      conta VARCHAR NOT NULL
+      conta VARCHAR NOT NULL,
+      conta_user VARCHAR(100),
+      organization VARCHAR(100)
     );
 
     CREATE TABLE IF NOT EXISTS public.organizations (
@@ -107,7 +113,9 @@ export async function createTablesIfNotExist() {
       vencimento NUMERIC NOT NULL,
       dia_util INTEGER NOT NULL,
       numero_parcelas INTEGER,
-      tipo_cartao VARCHAR DEFAULT 'credito' NOT NULL
+      tipo_cartao VARCHAR DEFAULT 'credito' NOT NULL,
+      conta_user VARCHAR(100),
+      organization VARCHAR(100)      
     );
   `;
 

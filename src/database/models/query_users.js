@@ -120,7 +120,7 @@ export async function createOrganization() {
 /** Atualiza a organização de um usuário */
 export async function updateUserOrganization(userId, organizationId) {
   const sql = `
-    UPDATE users SET organizacao = $1 WHERE id = $2 RETURNING *
+    UPDATE users SET organizacao = $1, organizacao_compartilhada = $1 WHERE id = $2 RETURNING *
   `;
   try {
     const res = await pool.query(sql, [organizationId, userId]);
@@ -148,4 +148,11 @@ export async function findOrganizationByKey(key) {
     [key]
   );
   return rows[0]?.id || null;
+}
+
+export async function findOrganizationById(id) {
+    const sql = 'SELECT chave FROM organizations WHERE id = $1'
+    const {rows} = await pool.query(sql,[id]);
+
+    return rows[0]?.chave || null;
 }
