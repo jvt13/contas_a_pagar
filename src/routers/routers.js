@@ -11,6 +11,7 @@ router.get('/contas_pagas', controller.getContasPagas);
 router.get('/contas_pendentes', controller.getContasPendentes);
 router.get('/gerenciar_limite', controller.gerenciarLimite);
 router.get('/get_conta_id/:id', controller.getContaID);
+router.post('/get_cartoes', controller.getCartoes);
 router.get('/get_cartoes', controller.getCartoes);
 router.get('/get_cartao_id/:id', controller.getCartaoID);
 

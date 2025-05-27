@@ -11,9 +11,8 @@ export const autenticarLogin = async (req, res) => {
         if (!isValid) return res.status(401).json({ success: false, mensagem: 'Senha incorreta' });
 
         const chave = await model_users.findOrganizationById(user.organizacao_compartilhada);
-        const id_chave = await model_users.findOrganizationById(user.organizacao_compartilhada);
-        console.log('ChaveUserOrga: ' + 'Id: ' + id_chave + ' - ' + chave)
-
+        const id_chave = await model_users.findOrganizationByKey(chave);
+        console.log('ChaveUserOrga: Id: ' + id_chave + ' - ' + chave)
 
         return res.json({
             success: true,

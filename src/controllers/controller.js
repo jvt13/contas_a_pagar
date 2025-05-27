@@ -16,7 +16,7 @@ export const getDadosConta = async (req, res) => {
   let anoSelecionado = req.body.ano || "";
   let organization = req.body.organization || "";
   console.log(`--------------------------------Mês selecionado: ${mesSelecionado} - Ano selecionado: ${anoSelecionado}`);
-  console.log('Organização: '+ organization)
+  console.log('Organização getDadosConta: '+ organization)
 
   if (!anoSelecionado) {
     return res.status(400).json({
@@ -207,6 +207,7 @@ export const salvarLimite = async (req, res) => {
 
 export const getLimite = async (req, res) => {
   const { mes, ano, organization } = req.body;
+  console.log(`Obtendo limite para Mês: ${mes}, Ano: ${ano}, Organização: ${organization}`);
   try {
     const result = await model.getLimite(mes, ano, organization);
     return res.json({ success: true, id: result ? result.id : 0 });
@@ -245,9 +246,12 @@ export const getContaID = async (req, res) => {
 };
 
 export const addCartao = async (req, res) => {
-  const { nome, tipo_cartao, vencimento, dia_util } = req.body;
+  const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization } = req.body;
+
+  console.log('Adicionando cartão: Nome:', nome, 'Tipo:', tipo_cartao, 'Vencimento:', vencimento, 'Dia útil:', dia_util, 'Conta do usuário:', conta_user, 'Organização:', organization);
+  
   try {
-    await model_config.insert(nome, tipo_cartao, vencimento, dia_util);
+    await model_config.insert(nome, tipo_cartao, vencimento, dia_util, conta_user, organization);
     return res.json({ success: true, mensagem: `Cartão ${nome} inserido com sucesso!` });
   } catch (error) {
     console.error('Erro ao inserir cartão:', error);
@@ -255,13 +259,25 @@ export const addCartao = async (req, res) => {
   }
 };
 
-export const getCartoes = (req, res) => {
-  model_config.selectAll()
-    .then(cartoes => res.json({ success: true, data: cartoes }))
-    .catch(err => {
-      console.error('Erro ao buscar cartões:', err);
-      res.status(500).json({ success: false, mensagem: 'Erro ao buscar cartões.' });
-    });
+export const getCartoes = async (req, res) => {
+  const { orgaId } = req.query;
+
+  console.log('Obtendo cartões com keyShareId:', orgaId);
+
+  try {
+    const result = await model_config.selectAll(orgaId);
+
+    if (!result || result.length === 0) {
+      console.warn('Nenhum cartão encontrado para a organização:', orgaId);
+      return res.json({ success: false, mensagem: 'Nenhum cartão encontrado.', result: [] });
+    }
+
+    console.log('Cartões encontrados:', result.length);
+    return res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('Erro ao buscar cartões:', err);
+    return res.status(500).json({ success: false, mensagem: 'Erro ao buscar cartões.' });
+  }
 };
 
 export const excluirCartao = async (req, res) => {
@@ -300,9 +316,9 @@ export const getCartaoID = async (req, res) => {
 
 export const updateCartao = async (req, res) => {
   const { id } = req.params;
-  const { nome, tipo_cartao, vencimento, dia_util } = req.body;
+  const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization } = req.body;
   try {
-    await model_config.update(id, nome, tipo_cartao, vencimento, dia_util);
+    await model_config.update(id, nome, tipo_cartao, vencimento, dia_util, conta_user, organization);
     return res.json({ success: true, mensagem: `Cartão ${nome} atualizado com sucesso!` });
   } catch (error) {
     console.error('Erro ao atualizar cartão:', error);
