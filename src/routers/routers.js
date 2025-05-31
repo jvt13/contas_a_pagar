@@ -17,6 +17,7 @@ router.get('/get_cartao_id/:id', controller.getCartaoID);
 
 /*---------------Post----------------------*/
 router.post('/form_conta', controller.addConta);
+router.post('/form_conta/editar', controller.updateConta);
 router.post('/marcar-paga', controller.alteraStatusConta);
 router.post('/salvar_limite', controller.salvarLimite);
 router.put('/salvar_limite', controller.salvarLimite);

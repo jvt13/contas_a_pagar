@@ -16,7 +16,7 @@ export const getDadosConta = async (req, res) => {
   let anoSelecionado = req.body.ano || "";
   let organization = req.body.organization || "";
   console.log(`--------------------------------Mês selecionado: ${mesSelecionado} - Ano selecionado: ${anoSelecionado}`);
-  console.log('Organização getDadosConta: '+ organization)
+  console.log('Organização getDadosConta: ' + organization)
 
   if (!anoSelecionado) {
     return res.status(400).json({
@@ -50,7 +50,7 @@ export const getDadosConta = async (req, res) => {
       ? obterCor(totalContas, limite_gastos)
       : null;
 
-    const anos = await model.getAnos() || [];
+    const anos = await model.getTodosAnos() || [];
     if (!Array.isArray(anos)) throw new Error('O retorno de getAnos não é um array.');
 
     const tipos_cartao = await model_config.selectAll();
@@ -122,14 +122,16 @@ export const getContas = async (req, res) => {
 };
 
 export const addConta = async (req, res) => {
-  const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao, organization } = req.body;
-  console.log('Organization: '+ organization)
+  const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao, conta_user, organization } = req.body;
+  console.log('Organization: ' + organization)
   try {
-    const valor_convertido = isNaN(valor)
+    console.log('Valor recebido:', valor);
+    /*const valor_convertido = isNaN(valor)
       ? parseFloat(valor.replace(/[R$\.]/g, '').replace(',', '.').trim())
-      : valor;
+      : valor;*/
+
     const dataFormatada = converterParaFormatoDate(vencimento);
-    await model.addConta({ nome, dataFormatada, valor_convertido, categoria, tipo_cartao, organization });
+    await model.addConta({ nome, dataFormatada, valor, categoria, tipo_cartao, conta_user, organization });
     return getDadosConta(req, res);
   } catch (error) {
     console.error('Erro ao adicionar conta:', error);
@@ -137,11 +139,43 @@ export const addConta = async (req, res) => {
   }
 };
 
+export const updateConta = async (req, res) => {
+  const { id, nome, vencimento, valor, categoria, tipo_cartao, conta_user, organization } = req.body;
+  try {
+    console.log('Valor recebido para atualização:', valor);
+    console.log('Nome da conta:', nome);
+    const dataFormatada = converterParaFormatoDate(vencimento);
+    await model.updateConta({ id, nome, dataFormatada, valor, categoria, tipo_cartao, conta_user, organization });
+    return getDadosConta(req, res);
+  } catch (error) {
+    console.error('Erro ao atualizar conta:', error);
+    return res.status(400).json({ success: false, message: 'Erro ao atualizar conta' });
+  }
+};
+
 export const getContasPagas = async (req, res) => {
   try {
-    const contasPagas = await model.getContasPagas();
+    const { ano, mes, organization } = req.query;
+
+    let mesNumero = 0;
+    if (mes && parseInt(mes) >= 0 && parseInt(mes) <= 11) {
+      mesNumero = parseInt(mes, 10) + 1;
+    }
+
+    console.log(`Obtendo contas pagas para Ano: ${ano}, Mês: ${mesNumero}, Organização: ${organization}`);
+    const contasPagas = await model.getContasPagas(ano, mesNumero, organization);
     const totalValores = contasPagas.reduce((sum, c) => sum + c.valor, 0);
-    return res.render('contas_pagas', { contasPagas, totalValores });
+
+    const anos = await model.getFiltroAnos(organization) || [];
+    console.log('Anos disponíveis:', anos);
+
+    return res.json({
+      success: true,
+      contasPagas,
+      totalValores: formatarParaBRL(totalValores),
+      anos,
+    });
+    //return res.render('contas_pagas', { contasPagas, totalValores });
   } catch (err) {
     console.error('Erro ao buscar contas pagas:', err);
     return res.send("Erro ao buscar contas pagas.");
@@ -149,6 +183,28 @@ export const getContasPagas = async (req, res) => {
 };
 
 export const getContasPendentes = async (req, res) => {
+  try {
+    const { organization } = req.query;
+    console.log('Obtendo contas pendentes para organização:', organization);
+    const contasPendentes = await model.getContasPendentes(organization);
+    const totalValores = contasPendentes.reduce((sum, c) => sum + c.valor, 0);
+    console.log('Total de valores pendentes:', totalValores);
+    const anos = await model.getFiltroAnos(organization) || [];
+    console.log('Anos disponíveis para contas pendentes:', anos);
+    return res.json({
+      success: true,
+      contasPendentes,
+      totalValores: formatarParaBRL(totalValores),
+      anos,
+    });
+    //return res.render('contas_pendentes', { contasPendentes, totalValores });
+  } catch (err) {
+    console.error('Erro ao buscar contas pendentes:', err);
+    return res.status(500).json({ success: false, message: 'Erro ao buscar contas pendentes.' });
+  }
+};
+
+export const getContasPendentes__ = async (req, res) => {
   try {
     const contasPendentes = await model.getContasPendentes();
     const totalValores = contasPendentes.reduce((sum, c) => sum + c.valor, 0);
@@ -162,7 +218,7 @@ export const getContasPendentes = async (req, res) => {
 export const alteraStatusConta = async (req, res) => {
   const { index, paga: check } = req.body;
   try {
-    await model.updateContas(index, check);
+    await model.updateContasStatus(index, check);
     return res.json({ success: true, message: 'Status atualizado com sucesso' });
   } catch (err) {
     console.error('Erro ao marcar conta:', err);
@@ -249,7 +305,7 @@ export const addCartao = async (req, res) => {
   const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization } = req.body;
 
   console.log('Adicionando cartão: Nome:', nome, 'Tipo:', tipo_cartao, 'Vencimento:', vencimento, 'Dia útil:', dia_util, 'Conta do usuário:', conta_user, 'Organização:', organization);
-  
+
   try {
     await model_config.insert(nome, tipo_cartao, vencimento, dia_util, conta_user, organization);
     return res.json({ success: true, mensagem: `Cartão ${nome} inserido com sucesso!` });
@@ -293,6 +349,7 @@ export const excluirCartao = async (req, res) => {
 
 export const getCartaoID = async (req, res) => {
   const { id } = req.params;
+  console.log('Obtendo cartão com ID:', id);
   const [dia, mes, ano] = dataAtualFormatada().split('/');
   try {
     const cartao = await model_config.selectId(id);

@@ -14,17 +14,33 @@ export async function getContas(mes, ano, organization) {
   const anoInt = Number.isInteger(parseInt(ano)) ? parseInt(ano) : null;
   const key_share = organization;
 
-  console.log("Chave: "+ key_share)
+  console.log("Chave: " + key_share)
 
-  const result = await pool.query(
-    `
-      SELECT * FROM contas
-      WHERE ($1::int IS NULL OR EXTRACT(MONTH FROM vencimento) = $1::int)
-      AND ($2::int IS NULL OR EXTRACT(YEAR FROM vencimento) = $2::int)
-      AND organization = $3
-      ORDER BY vencimento
-    `,
-    [mesInt, anoInt, key_share]
+  const query = `
+                SELECT 
+                    c.id, 
+                    c.nome, 
+                    tc.nome as tipo_cartao, 
+                    c.categoria, 
+                    c.vencimento, 
+                    c.valor,
+                    c.organization,
+                    c.conta_user,
+                    c.paga,
+                    c.data_inclusao
+                FROM 
+                    contas c
+                LEFT JOIN 
+                    public.tipo_cartao tc ON tc.id = c.tipo_cartao
+                WHERE 
+                    ($1::integer IS NULL OR EXTRACT(MONTH FROM c.vencimento) = $1::integer)
+                    AND ($2::integer IS NULL OR EXTRACT(YEAR FROM c.vencimento) = $2::integer)
+                    AND c.organization = $3  -- ou $3::text se for string
+                ORDER BY 
+                    c.vencimento, 
+                    c.id;
+    `;
+  const result = await pool.query(query, [mesInt, anoInt, key_share]
   );
 
   return result.rows.map(conta => ({
@@ -42,17 +58,36 @@ export async function getContas(mes, ano, organization) {
 export async function addConta(conta) {
   console.log('Adicionando conta:', conta);
   await pool.query(
-    'INSERT INTO contas (nome, vencimento, valor, categoria, tipo_cartao, paga, organization) VALUES ($1, $2, $3, $4, $5, FALSE, $6)',
-    [conta.nome, conta.dataFormatada, conta.valor_convertido, conta.categoria, conta.tipo_cartao, conta.organization]
+    'INSERT INTO contas (nome, vencimento, valor, categoria, tipo_cartao, paga, conta_user, organization) VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7)',
+    [conta.nome, conta.dataFormatada, conta.valor, conta.categoria, conta.tipo_cartao, conta.conta_user, conta.organization]
   );
 }
 
-export async function updateContas(id, status) {
+export async function updateConta(conta) {
+  console.log('Atualizando conta:', conta);
+  await pool.query(
+    'UPDATE contas SET nome = $1, vencimento = $2, valor = $3, categoria = $4, tipo_cartao = $5 WHERE id = $6',
+    [conta.nome, conta.dataFormatada, conta.valor, conta.categoria, conta.tipo_cartao, conta.id]
+  );
+}
+
+export async function updateContasStatus(id, status) {
   await pool.query('UPDATE contas SET paga = $2 WHERE id = $1', [id, status]);
 }
 
-export async function getContasPagas() {
-  const result = await pool.query('SELECT * FROM contas WHERE paga = TRUE');
+export async function getContasPagas(ano, mes, organization) {
+  const query = `SELECT * FROM contas
+      WHERE paga = TRUE
+      AND ($1::int IS NULL OR EXTRACT(MONTH FROM vencimento) = $1::int)
+      AND ($2::int IS NULL OR EXTRACT(YEAR FROM vencimento) = $2::int)
+      AND organization = $3
+      ORDER BY vencimento, id`;
+
+  const result = await pool.query(query, [mes, ano, organization]);
+  console.log('Contas pagas:', result.rows.length);
+
+
+  //const result = await pool.query('SELECT * FROM contas WHERE paga = TRUE');
   return result.rows.map(conta => ({
     ...conta,
     valor: parseFloat(conta.valor) || 0,
@@ -60,7 +95,31 @@ export async function getContasPagas() {
   }));
 }
 
-export async function getContasPendentes() {
+export async function getContasPendentes(ano, mes, organization) {
+  const query = `SELECT * FROM contas
+      WHERE paga = FALSE
+      AND ($1::int IS NULL OR EXTRACT(MONTH FROM vencimento) = $1::int)
+      AND ($2::int IS NULL OR EXTRACT(YEAR FROM vencimento) = $2::int)
+      AND organization = $3
+      ORDER BY vencimento, id`;
+  const result = await pool.query(query, [mes, ano, organization]);
+  console.log('Contas pendentes:', result.rows.length);
+  //const result = await pool.query('SELECT * FROM contas WHERE paga = FALSE');
+  if (result.rows.length === 0) {
+    return [];
+  }
+  console.log('Contas pendentes:', result.rows.length);
+  console.log('Contas pendentes:', result.rows);
+  console.log('Contas pendentes:', result.rows[0]);
+  return result.rows.map(conta => ({
+    ...conta,
+    valor: parseFloat(conta.valor) || 0,
+    vencimento: format(new Date(conta.vencimento), 'dd/MM/yyyy')
+  }));
+}
+
+
+export async function getContasPendentes__() {
   const result = await pool.query('SELECT * FROM contas WHERE paga = FALSE');
   return result.rows.map(conta => ({
     ...conta,
@@ -113,7 +172,14 @@ export async function updateLimite(id, limite) {
   return result.rows.length > 0 ? result.rows[0] : null;
 }
 
-export async function getAnos() {
+export async function getFiltroAnos(organization) {
+  const result = await pool.query(
+    "SELECT DISTINCT ano FROM public.limites WHERE organization = $1 ORDER BY ano DESC"
+    , [organization]);
+  return result.rows;
+}
+
+export async function getTodosAnos() {
   const result = await pool.query(
     "SELECT DISTINCT ano FROM public.limites ORDER BY ano DESC"
   );
