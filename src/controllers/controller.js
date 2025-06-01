@@ -97,7 +97,7 @@ export const getContas = async (req, res) => {
       ? obterCor(totalContas, limite_gastos)
       : null;
 
-    const anos = await model.getAnos() || [];
+    const anos = await model.getTodosAnos() || [];
     if (!Array.isArray(anos)) throw new Error('O retorno de getAnos não é um array.');
 
     const tipos_cartao = await model_config.selectAll();
@@ -227,7 +227,7 @@ export const alteraStatusConta = async (req, res) => {
 };
 
 export const gerenciarLimite = (req, res) => {
-  model.getAnos()
+  model.getTodosAnos()
     .then(anos => res.render('partials/gerenciar_limite', { anos }))
     .catch(err => {
       console.error('Erro ao buscar anos para limite:', err);
