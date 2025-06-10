@@ -17,7 +17,7 @@ export const autenticarLogin = async (req, res) => {
         return res.json({
             success: true,
             data: {
-                userId: user.id, key_share: chave, key_share_id: id_chave
+                username:user.username, userId: user.id, key_share: chave, key_share_id: id_chave
             }, mensagem: `Usuário ${email} autenticado com sucesso!`
         });
     } catch (error) {

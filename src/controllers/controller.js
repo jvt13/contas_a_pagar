@@ -184,9 +184,16 @@ export const getContasPagas = async (req, res) => {
 
 export const getContasPendentes = async (req, res) => {
   try {
-    const { organization } = req.query;
-    console.log('Obtendo contas pendentes para organização:', organization);
-    const contasPendentes = await model.getContasPendentes(organization);
+    const { ano, mes, organization } = req.query;
+
+    let mesNumero = 0;
+    if (mes && parseInt(mes) >= 0 && parseInt(mes) <= 11) {
+      mesNumero = parseInt(mes, 10) + 1;
+    }
+
+    console.log(`Obtendo contas pagas para Ano: ${ano}, Mês: ${mesNumero}, Organização: ${organization}`);
+
+    const contasPendentes = await model.getContasPendentes(ano, mesNumero, organization);
     const totalValores = contasPendentes.reduce((sum, c) => sum + c.valor, 0);
     console.log('Total de valores pendentes:', totalValores);
     const anos = await model.getFiltroAnos(organization) || [];
@@ -350,19 +357,43 @@ export const excluirCartao = async (req, res) => {
 export const getCartaoID = async (req, res) => {
   const { id } = req.params;
   console.log('Obtendo cartão com ID:', id);
-  const [dia, mes, ano] = dataAtualFormatada().split('/');
+
   try {
     const cartao = await model_config.selectId(id);
     if (!cartao) {
       return res.status(404).json({ success: false, message: 'Cartão não encontrado' });
     }
 
-    let novoMesFinal = parseInt(mes, 10);
-    if (parseInt(dia, 10) >= parseInt(cartao.dia_util, 10)) {
-      novoMesFinal = novoMesFinal % 12 + 1;
+    // Obter data atual
+    const hoje = new Date();
+    const diaAtual = hoje.getDate();
+    const mesAtual = hoje.getMonth() + 1; // meses são 0-11
+    const anoAtual = hoje.getFullYear();
+
+    // Converter valores do cartão para números
+    const diaUtil = parseInt(cartao.dia_util, 10);
+    const diaVencimento = parseInt(cartao.vencimento, 10);
+
+    // Calcular mês e ano do vencimento
+    let mesVencimento = mesAtual;
+    let anoVencimento = anoAtual;
+
+    if (diaAtual >= diaUtil) {
+      mesVencimento++;
+      if (mesVencimento > 12) {
+        mesVencimento = 1;
+        anoVencimento++;
+      }
     }
-    const vencDia = cartao.vencimento.toString().padStart(2, '0');
-    cartao.vencimento = `${ano}-${String(novoMesFinal).padStart(2, '0')}-${vencDia}`;
+
+    // Garantir que o dia do vencimento não exceda os dias do mês
+    const ultimoDiaMes = new Date(anoVencimento, mesVencimento, 0).getDate();
+    const diaVencimentoAjustado = Math.min(diaVencimento, ultimoDiaMes);
+
+    // Formatar data no padrão YYYY-MM-DD
+    const dataVencimento = `${anoVencimento}-${String(mesVencimento).padStart(2, '0')}-${String(diaVencimentoAjustado).padStart(2, '0')}`;
+
+    cartao.vencimento = dataVencimento;
 
     return res.status(200).json({ success: true, data: cartao });
   } catch (error) {
