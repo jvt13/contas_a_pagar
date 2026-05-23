@@ -11,7 +11,10 @@ import router from './src/routers/routers.js';
 import * as estrutura from './src/database/estrutura.js';
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+
+const DEFAULT_PORT = 3100;
+const parsedPort = Number(process.env.PORT);
+const PORT = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : DEFAULT_PORT;
 
 // Carregando os certificados
 const options = {
@@ -67,14 +70,13 @@ function startServer(port) {
     console.log(`Servidor rodando na porta ${port}`);
   }).on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
-      console.log(`A porta ${port} está ocupada, tentando a próxima disponível...`);
-      if (port < 5050) {
-        startServer(port + 1);
-      } else {
-        console.error("Não há portas disponíveis no intervalo definido.");
-      }
+      console.error(
+        `Porta ${port} já está em uso. Libere a porta ou defina PORT=${DEFAULT_PORT} no ambiente do servidor.`
+      );
+      process.exit(1);
     } else {
       console.error(`Erro ao iniciar o servidor: ${err.message}`);
+      process.exit(1);
     }
   });
 }
