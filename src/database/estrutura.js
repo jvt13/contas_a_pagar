@@ -124,6 +124,7 @@ export async function createTablesIfNotExist() {
     client = await pool.connect();
     await client.query(createTablesQuery);
     console.log('Tabelas criadas ou já existentes.');
+    await migrateParcelamentoColumns(client);
   } catch (err) {
     console.error('Erro ao criar as tabelas:', err);
     throw err;
@@ -131,4 +132,22 @@ export async function createTablesIfNotExist() {
     if (client) client.release();
     await pool.end();
   }
+}
+
+/**
+ * Adiciona colunas de parcelamento em contas (idempotente).
+ */
+async function migrateParcelamentoColumns(client) {
+  await client.query(`
+    ALTER TABLE public.contas
+      ADD COLUMN IF NOT EXISTS grupo_parcelamento UUID,
+      ADD COLUMN IF NOT EXISTS parcela_atual SMALLINT,
+      ADD COLUMN IF NOT EXISTS total_parcelas SMALLINT;
+  `);
+  await client.query(`
+    CREATE INDEX IF NOT EXISTS idx_contas_grupo_parcelamento
+      ON public.contas (grupo_parcelamento)
+      WHERE grupo_parcelamento IS NOT NULL;
+  `);
+  console.log('Colunas de parcelamento verificadas.');
 }

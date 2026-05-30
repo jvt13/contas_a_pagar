@@ -10,6 +10,7 @@ import {
   converterParaFormatoDate
 } from '../utils/util.js';
 import { verifyPassword, hashPassword } from '../utils/auth.js';
+import { calcularVencimentoContaCartaoISO } from '../utils/competenciaCartao.js';
 
 export const getDadosConta = async (req, res) => {
   let mesSelecionado = req.body.mes || "";
@@ -122,34 +123,69 @@ export const getContas = async (req, res) => {
 };
 
 export const addConta = async (req, res) => {
-  const { nome, vencimento, valor, mes, ano, categoria, tipo_cartao, conta_user, organization } = req.body;
-  console.log('Organization: ' + organization)
-  try {
-    console.log('Valor recebido:', valor);
-    /*const valor_convertido = isNaN(valor)
-      ? parseFloat(valor.replace(/[R$\.]/g, '').replace(',', '.').trim())
-      : valor;*/
+  const {
+    nome, vencimento, valor, mes, ano, categoria, tipo_cartao, conta_user, organization,
+    parcelado, total_parcelas,
+  } = req.body;
 
+  try {
     const dataFormatada = converterParaFormatoDate(vencimento);
-    await model.addConta({ nome, dataFormatada, valor, categoria, tipo_cartao, conta_user, organization });
+    const valorNumerico = parseFloat(valor);
+    const totalParcelas = parseInt(total_parcelas, 10);
+    const isParcelado = parcelado === true || parcelado === 'true' || parcelado === 1 || parcelado === '1';
+
+    const contaBase = {
+      nome,
+      dataFormatada,
+      valor: valorNumerico,
+      categoria,
+      tipo_cartao,
+      conta_user,
+      organization,
+    };
+
+    if (isParcelado && totalParcelas > 1) {
+      if (Number.isNaN(totalParcelas) || totalParcelas < 2 || totalParcelas > 36) {
+        return res.status(400).json({
+          success: false,
+          message: 'Quantidade de parcelas deve estar entre 2 e 36.',
+        });
+      }
+      if (Number.isNaN(valorNumerico) || valorNumerico <= 0) {
+        return res.status(400).json({ success: false, message: 'Valor inválido para parcelamento.' });
+      }
+
+      await model.addContasParceladas(contaBase, totalParcelas);
+    } else {
+      await model.addConta(contaBase);
+    }
+
     return getDadosConta(req, res);
   } catch (error) {
     console.error('Erro ao adicionar conta:', error);
-    return res.status(400).json({ success: false, message: 'Erro ao adicionar conta' });
+    return res.status(400).json({ success: false, message: error.message || 'Erro ao adicionar conta' });
   }
 };
 
 export const updateConta = async (req, res) => {
-  const { id, nome, vencimento, valor, categoria, tipo_cartao, conta_user, organization } = req.body;
+  const {
+    id, nome, vencimento, valor, categoria, tipo_cartao, conta_user, organization, escopo,
+  } = req.body;
+
   try {
-    console.log('Valor recebido para atualização:', valor);
-    console.log('Nome da conta:', nome);
     const dataFormatada = converterParaFormatoDate(vencimento);
-    await model.updateConta({ id, nome, dataFormatada, valor, categoria, tipo_cartao, conta_user, organization });
+    const escopoValido = ['apenas_esta', 'esta_e_futuras', 'todas'].includes(escopo)
+      ? escopo
+      : 'apenas_esta';
+
+    await model.updateContaComEscopo(
+      { id, nome, dataFormatada, valor, categoria, tipo_cartao, conta_user, organization },
+      escopoValido
+    );
     return getDadosConta(req, res);
   } catch (error) {
     console.error('Erro ao atualizar conta:', error);
-    return res.status(400).json({ success: false, message: 'Erro ao atualizar conta' });
+    return res.status(400).json({ success: false, message: error.message || 'Erro ao atualizar conta' });
   }
 };
 
@@ -282,15 +318,20 @@ export const getLimite = async (req, res) => {
 
 export const excluirConta = async (req, res) => {
   const { id } = req.params;
+  const escopo = req.query.escopo || 'apenas_esta';
+  const escopoValido = ['apenas_esta', 'esta_e_futuras', 'todas'].includes(escopo)
+    ? escopo
+    : 'apenas_esta';
+
   try {
-    const response = await model.excluirConta(id);
+    const response = await model.excluirConta(id, escopoValido);
     if (!response) {
       return res.status(404).json({ success: false, mensagem: 'Conta não encontrada.' });
     }
     return res.json({ success: true, mensagem: 'Conta excluída com sucesso!' });
   } catch (error) {
     console.error('Erro ao excluir conta:', error);
-    return res.status(500).json({ success: false, mensagem: 'Erro ao excluir conta.' });
+    return res.status(500).json({ success: false, mensagem: error.message || 'Erro ao excluir conta.' });
   }
 };
 
@@ -364,36 +405,9 @@ export const getCartaoID = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Cartão não encontrado' });
     }
 
-    // Obter data atual
-    const hoje = new Date();
-    const diaAtual = hoje.getDate();
-    const mesAtual = hoje.getMonth() + 1; // meses são 0-11
-    const anoAtual = hoje.getFullYear();
-
-    // Converter valores do cartão para números
-    const diaUtil = parseInt(cartao.dia_util, 10);
-    const diaVencimento = parseInt(cartao.vencimento, 10);
-
-    // Calcular mês e ano do vencimento
-    let mesVencimento = mesAtual;
-    let anoVencimento = anoAtual;
-
-    if (diaAtual >= diaUtil) {
-      mesVencimento++;
-      if (mesVencimento > 12) {
-        mesVencimento = 1;
-        anoVencimento++;
-      }
-    }
-
-    // Garantir que o dia do vencimento não exceda os dias do mês
-    const ultimoDiaMes = new Date(anoVencimento, mesVencimento, 0).getDate();
-    const diaVencimentoAjustado = Math.min(diaVencimento, ultimoDiaMes);
-
-    // Formatar data no padrão YYYY-MM-DD
-    const dataVencimento = `${anoVencimento}-${String(mesVencimento).padStart(2, '0')}-${String(diaVencimentoAjustado).padStart(2, '0')}`;
-
-    cartao.vencimento = dataVencimento;
+    cartao.dia_vencimento = parseInt(cartao.vencimento, 10);
+    cartao.vencimento_conta = calcularVencimentoContaCartaoISO(cartao, new Date());
+    cartao.vencimento = cartao.vencimento_conta;
 
     return res.status(200).json({ success: true, data: cartao });
   } catch (error) {

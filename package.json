@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "migrate:parcelamento": "node scripts/migrate-parcelamento.js",
+    "test:parcelamento": "node src/utils/parcelamento.test.js",
+    "test:competencia": "node scripts/competencia-cartao.test.js"
   },
   "keywords": [],
   "author": "",
