@@ -5,6 +5,15 @@ import * as userController from '../controllers/userController.js';
 
 const router = express.Router();
 
+router.get('/health', (_req, res) => {
+  res.json({
+    success: true,
+    status: 'ok',
+    service: 'contas_a_pagar',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 /*---------------Get-----------------------*/
 router.get('/', controller.getContas);
 router.get('/contas_pagas', controller.getContasPagas);
