@@ -10,7 +10,7 @@ import pool from '../conexao.js';
  * @param {number} numero_parcelas - Número de parcelas.
  * @returns {Promise<Object>} Objeto com o ID do novo registro.
  */
-export async function insert(nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas, limite_credito) {
+export async function insert(nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas, limite_credito, banco_slug) {
     console.log('Inserindo novo tipo de cartão:', {
         nome,
         tipo_cartao,
@@ -18,10 +18,11 @@ export async function insert(nome, tipo_cartao, vencimento, dia_util, conta_user
         dia_util,
         numero_parcelas,
         limite_credito,
+        banco_slug,
     });
     const sql = `
-    INSERT INTO tipo_cartao (nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas, limite_credito)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    INSERT INTO tipo_cartao (nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas, limite_credito, banco_slug)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
     RETURNING id
   `;
 
@@ -35,6 +36,7 @@ export async function insert(nome, tipo_cartao, vencimento, dia_util, conta_user
             organization,
             numero_parcelas ?? null,
             limite_credito ?? null,
+            banco_slug ?? null,
         ]);
         console.log('Novo tipo de cartão inserido com ID:', res.rows[0].id);
         return res.rows[0];
@@ -87,11 +89,11 @@ export async function selectId(id) {
  * @param {number} numero_parcelas - Novo número de parcelas.
  * @returns {Promise<Object>} Dados atualizados.
  */
-export async function update(id, nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas, limite_credito) {
+export async function update(id, nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas, limite_credito, banco_slug) {
     const sql = `
     UPDATE tipo_cartao
-    SET nome = $1, tipo_cartao = $2, vencimento = $3, dia_util = $4, conta_user = $5, organization = $6, numero_parcelas = $7, limite_credito = $8
-    WHERE id = $9
+    SET nome = $1, tipo_cartao = $2, vencimento = $3, dia_util = $4, conta_user = $5, organization = $6, numero_parcelas = $7, limite_credito = $8, banco_slug = $9
+    WHERE id = $10
     RETURNING *
   `;
 
@@ -105,6 +107,7 @@ export async function update(id, nome, tipo_cartao, vencimento, dia_util, conta_
             organization,
             numero_parcelas ?? null,
             limite_credito ?? null,
+            banco_slug ?? null,
             id,
         ]);
         console.log('Cartão atualizado:', res.rows[0]);

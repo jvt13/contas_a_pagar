@@ -12,6 +12,16 @@ import {
 import { verifyPassword, hashPassword } from '../utils/auth.js';
 import { calcularVencimentoContaCartaoISO } from '../utils/competenciaCartao.js';
 import { montarDashboardCartoes } from '../utils/dashboardCartao.js';
+import { resolverBanco } from '../utils/bancos.js';
+
+function resolverNomeCartao(nome, bancoSlug) {
+  const apelido = String(nome || '').trim();
+  if (apelido) {
+    return apelido;
+  }
+  const banco = resolverBanco(bancoSlug);
+  return banco?.nome || 'Cartão';
+}
 
 export const getDadosConta = async (req, res) => {
   let mesSelecionado = req.body.mes || "";
@@ -381,23 +391,25 @@ export const getContaID = async (req, res) => {
 };
 
 export const addCartao = async (req, res) => {
-  const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization, limite_credito } = req.body;
+  const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization, limite_credito, banco_slug } = req.body;
 
-  console.log('Adicionando cartão: Nome:', nome, 'Tipo:', tipo_cartao, 'Vencimento:', vencimento, 'Dia útil:', dia_util, 'Conta do usuário:', conta_user, 'Organização:', organization);
+  console.log('Adicionando cartão: Nome:', nome, 'Banco:', banco_slug, 'Tipo:', tipo_cartao);
 
   try {
     const limite = limite_credito != null && limite_credito !== '' ? parseFloat(limite_credito) : null;
+    const nomeFinal = resolverNomeCartao(nome, banco_slug);
     await model_config.insert(
-      nome,
+      nomeFinal,
       tipo_cartao,
       vencimento,
       dia_util,
       conta_user,
       organization,
       null,
-      Number.isNaN(limite) ? null : limite
+      Number.isNaN(limite) ? null : limite,
+      banco_slug || null
     );
-    return res.json({ success: true, mensagem: `Cartão ${nome} inserido com sucesso!` });
+    return res.json({ success: true, mensagem: `Cartão ${nomeFinal} inserido com sucesso!` });
   } catch (error) {
     console.error('Erro ao inserir cartão:', error);
     return res.status(500).json({ success: false, mensagem: 'Erro ao inserir cartão: ' + error.message });
@@ -459,21 +471,23 @@ export const getCartaoID = async (req, res) => {
 
 export const updateCartao = async (req, res) => {
   const { id } = req.params;
-  const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization, limite_credito } = req.body;
+  const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization, limite_credito, banco_slug } = req.body;
   try {
     const limite = limite_credito != null && limite_credito !== '' ? parseFloat(limite_credito) : null;
+    const nomeFinal = resolverNomeCartao(nome, banco_slug);
     await model_config.update(
       id,
-      nome,
+      nomeFinal,
       tipo_cartao,
       vencimento,
       dia_util,
       conta_user,
       organization,
       null,
-      Number.isNaN(limite) ? null : limite
+      Number.isNaN(limite) ? null : limite,
+      banco_slug || null
     );
-    return res.json({ success: true, mensagem: `Cartão ${nome} atualizado com sucesso!` });
+    return res.json({ success: true, mensagem: `Cartão ${nomeFinal} atualizado com sucesso!` });
   } catch (error) {
     console.error('Erro ao atualizar cartão:', error);
     return res.status(500).json({ success: false, mensagem: 'Erro ao atualizar cartão: ' + error.message });

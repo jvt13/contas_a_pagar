@@ -8,6 +8,7 @@ import {
   calcularVencimentoContaDebitoISO,
   extrairMesAnoCompetenciaISO,
 } from './competenciaCartao.js';
+import { enriquecerCartaoComBanco, resolverBancoParaCartao } from './bancos.js';
 
 function formatarDataISO(date) {
   const dia = String(date.getDate()).padStart(2, '0');
@@ -23,6 +24,14 @@ function normalizarCartaoId(conta) {
 function parseValor(valor) {
   const n = parseFloat(valor);
   return Number.isNaN(n) ? 0 : n;
+}
+
+function normalizarApelido(texto) {
+  return String(texto || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }
 
 export function classificarUtilizacao(percentual) {
@@ -87,10 +96,17 @@ export function montarResumoCartao(cartao, todasContas = [], dataReferencia = ne
   }
 
   const faturaAtual = contasFatura.reduce((sum, conta) => sum + parseValor(conta.valor), 0);
+  const bancoInfo = enriquecerCartaoComBanco(cartao);
+  const banco = resolverBancoParaCartao(cartao);
 
   return {
     id: cartao.id,
     nome: cartao.nome || 'Sem nome',
+    nomeExibicao: banco?.nome || cartao.nome || 'Sem nome',
+    apelido: banco && cartao.nome && normalizarApelido(cartao.nome) !== normalizarApelido(banco.nome)
+      ? cartao.nome
+      : null,
+    ...bancoInfo,
     tipo,
     tipoLabel: labelTipoCartao(tipo),
     limite,

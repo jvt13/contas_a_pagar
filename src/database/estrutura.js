@@ -127,6 +127,7 @@ export async function createTablesIfNotExist() {
     await migrateParcelamentoColumns(client);
     await migrateRecorrenciaColumns(client);
     await migrateLimiteCreditoCartao(client);
+    await migrateBancoSlugCartao(client);
   } catch (err) {
     console.error('Erro ao criar as tabelas:', err);
     throw err;
@@ -181,4 +182,15 @@ async function migrateLimiteCreditoCartao(client) {
       ADD COLUMN IF NOT EXISTS limite_credito NUMERIC(12,2);
   `);
   console.log('Coluna limite_credito em tipo_cartao verificada.');
+}
+
+/**
+ * Slug do banco emissor em tipo_cartao (idempotente).
+ */
+async function migrateBancoSlugCartao(client) {
+  await client.query(`
+    ALTER TABLE public.tipo_cartao
+      ADD COLUMN IF NOT EXISTS banco_slug VARCHAR(50);
+  `);
+  console.log('Coluna banco_slug em tipo_cartao verificada.');
 }
