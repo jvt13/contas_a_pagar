@@ -11,6 +11,7 @@ import {
 } from '../utils/util.js';
 import { verifyPassword, hashPassword } from '../utils/auth.js';
 import { calcularVencimentoContaCartaoISO } from '../utils/competenciaCartao.js';
+import { montarDashboardCartoes } from '../utils/dashboardCartao.js';
 
 export const getDadosConta = async (req, res) => {
   let mesSelecionado = req.body.mes || "";
@@ -125,14 +126,17 @@ export const getContas = async (req, res) => {
 export const addConta = async (req, res) => {
   const {
     nome, vencimento, valor, mes, ano, categoria, tipo_cartao, conta_user, organization,
-    parcelado, total_parcelas,
+    parcelado, total_parcelas, recorrente, total_recorrencias,
   } = req.body;
 
   try {
     const dataFormatada = converterParaFormatoDate(vencimento);
     const valorNumerico = parseFloat(valor);
     const totalParcelas = parseInt(total_parcelas, 10);
+    const totalRecorrencias = parseInt(total_recorrencias, 10);
     const isParcelado = parcelado === true || parcelado === 'true' || parcelado === 1 || parcelado === '1';
+    const isRecorrente =
+      recorrente === true || recorrente === 'true' || recorrente === 1 || recorrente === '1';
 
     const contaBase = {
       nome,
@@ -143,6 +147,13 @@ export const addConta = async (req, res) => {
       conta_user,
       organization,
     };
+
+    if (isParcelado && isRecorrente) {
+      return res.status(400).json({
+        success: false,
+        message: 'Escolha apenas um modo: parcelado ou recorrente.',
+      });
+    }
 
     if (isParcelado && totalParcelas > 1) {
       if (Number.isNaN(totalParcelas) || totalParcelas < 2 || totalParcelas > 36) {
@@ -156,6 +167,18 @@ export const addConta = async (req, res) => {
       }
 
       await model.addContasParceladas(contaBase, totalParcelas);
+    } else if (isRecorrente && totalRecorrencias > 1) {
+      if (Number.isNaN(totalRecorrencias) || totalRecorrencias < 2 || totalRecorrencias > 36) {
+        return res.status(400).json({
+          success: false,
+          message: 'Quantidade de recorrências deve estar entre 2 e 36.',
+        });
+      }
+      if (Number.isNaN(valorNumerico) || valorNumerico <= 0) {
+        return res.status(400).json({ success: false, message: 'Valor inválido para recorrência.' });
+      }
+
+      await model.addContasRecorrentes(contaBase, totalRecorrencias);
     } else {
       await model.addConta(contaBase);
     }
@@ -222,14 +245,22 @@ export const getContasPendentes = async (req, res) => {
   try {
     const { ano, mes, organization } = req.query;
 
-    let mesNumero = 0;
-    if (mes && parseInt(mes) >= 0 && parseInt(mes) <= 11) {
+    let mesNumero = null;
+    if (mes !== undefined && mes !== '' && parseInt(mes, 10) >= 0 && parseInt(mes, 10) <= 11) {
       mesNumero = parseInt(mes, 10) + 1;
     }
 
-    console.log(`Obtendo contas pagas para Ano: ${ano}, Mês: ${mesNumero}, Organização: ${organization}`);
+    let anoNumero = null;
+    if (ano !== undefined && ano !== '') {
+      anoNumero = parseInt(ano, 10);
+      if (Number.isNaN(anoNumero)) {
+        anoNumero = null;
+      }
+    }
 
-    const contasPendentes = await model.getContasPendentes(ano, mesNumero, organization);
+    console.log(`Obtendo contas pendentes — Ano: ${anoNumero}, Mês: ${mesNumero}, Organização: ${organization}`);
+
+    const contasPendentes = await model.getContasPendentes(anoNumero, mesNumero, organization);
     const totalValores = contasPendentes.reduce((sum, c) => sum + c.valor, 0);
     console.log('Total de valores pendentes:', totalValores);
     const anos = await model.getFiltroAnos(organization) || [];
@@ -350,12 +381,22 @@ export const getContaID = async (req, res) => {
 };
 
 export const addCartao = async (req, res) => {
-  const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization } = req.body;
+  const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization, limite_credito } = req.body;
 
   console.log('Adicionando cartão: Nome:', nome, 'Tipo:', tipo_cartao, 'Vencimento:', vencimento, 'Dia útil:', dia_util, 'Conta do usuário:', conta_user, 'Organização:', organization);
 
   try {
-    await model_config.insert(nome, tipo_cartao, vencimento, dia_util, conta_user, organization);
+    const limite = limite_credito != null && limite_credito !== '' ? parseFloat(limite_credito) : null;
+    await model_config.insert(
+      nome,
+      tipo_cartao,
+      vencimento,
+      dia_util,
+      conta_user,
+      organization,
+      null,
+      Number.isNaN(limite) ? null : limite
+    );
     return res.json({ success: true, mensagem: `Cartão ${nome} inserido com sucesso!` });
   } catch (error) {
     console.error('Erro ao inserir cartão:', error);
@@ -418,13 +459,50 @@ export const getCartaoID = async (req, res) => {
 
 export const updateCartao = async (req, res) => {
   const { id } = req.params;
-  const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization } = req.body;
+  const { nome, tipo_cartao, vencimento, dia_util, conta_user, organization, limite_credito } = req.body;
   try {
-    await model_config.update(id, nome, tipo_cartao, vencimento, dia_util, conta_user, organization);
+    const limite = limite_credito != null && limite_credito !== '' ? parseFloat(limite_credito) : null;
+    await model_config.update(
+      id,
+      nome,
+      tipo_cartao,
+      vencimento,
+      dia_util,
+      conta_user,
+      organization,
+      null,
+      Number.isNaN(limite) ? null : limite
+    );
     return res.json({ success: true, mensagem: `Cartão ${nome} atualizado com sucesso!` });
   } catch (error) {
     console.error('Erro ao atualizar cartão:', error);
     return res.status(500).json({ success: false, mensagem: 'Erro ao atualizar cartão: ' + error.message });
+  }
+};
+
+export const getDashboardCartoes = async (req, res) => {
+  const { orgaId } = req.query;
+
+  if (!orgaId) {
+    return res.status(400).json({ success: false, mensagem: 'orgaId é obrigatório.' });
+  }
+
+  try {
+    const [cartoes, contas] = await Promise.all([
+      model_config.selectAll(orgaId),
+      model.getContasPendentesOrganizacao(orgaId),
+    ]);
+
+    const resumos = montarDashboardCartoes(cartoes || [], contas || [], new Date());
+
+    return res.json({
+      success: true,
+      data: resumos,
+      atualizadoEm: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('Erro ao montar dashboard de cartões:', err);
+    return res.status(500).json({ success: false, mensagem: 'Erro ao carregar dashboard de cartões.' });
   }
 };
 

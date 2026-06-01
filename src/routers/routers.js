@@ -23,6 +23,7 @@ router.get('/get_conta_id/:id', controller.getContaID);
 router.post('/get_cartoes', controller.getCartoes);
 router.get('/get_cartoes', controller.getCartoes);
 router.get('/get_cartao_id/:id', controller.getCartaoID);
+router.get('/dashboard/cartoes', controller.getDashboardCartoes);
 
 /*---------------Post----------------------*/
 router.post('/form_conta', controller.addConta);

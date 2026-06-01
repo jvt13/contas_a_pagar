@@ -7,6 +7,7 @@ import {
   gerarDefinicoesParcelas,
   recalcularVencimentosGrupo,
 } from '../../utils/parcelamento.js';
+import { gerarDefinicoesRecorrencia } from '../../utils/recorrencia.js';
 
 const CAMPOS_CONTA = `
   c.id,
@@ -22,6 +23,9 @@ const CAMPOS_CONTA = `
   c.grupo_parcelamento,
   c.parcela_atual,
   c.total_parcelas,
+  c.grupo_recorrencia,
+  c.recorrencia_atual,
+  c.total_recorrencias,
   c.tipo_cartao as tipo_cartao_id
 `;
 
@@ -32,6 +36,9 @@ function mapContaRow(conta) {
     vencimento: format(new Date(conta.vencimento), 'dd/MM/yyyy'),
     parcela_atual: conta.parcela_atual != null ? parseInt(conta.parcela_atual, 10) : null,
     total_parcelas: conta.total_parcelas != null ? parseInt(conta.total_parcelas, 10) : null,
+    recorrencia_atual: conta.recorrencia_atual != null ? parseInt(conta.recorrencia_atual, 10) : null,
+    total_recorrencias:
+      conta.total_recorrencias != null ? parseInt(conta.total_recorrencias, 10) : null,
   };
 }
 
@@ -61,7 +68,9 @@ export async function getContas(mes, ano, organization) {
 export async function getContaRaw(id) {
   const query = `
     SELECT id, nome, vencimento, valor, categoria, tipo_cartao,
-           grupo_parcelamento, parcela_atual, total_parcelas, organization
+           grupo_parcelamento, parcela_atual, total_parcelas,
+           grupo_recorrencia, recorrencia_atual, total_recorrencias,
+           organization
     FROM contas
     WHERE id = $1;
   `;
@@ -73,8 +82,9 @@ export async function addConta(conta) {
   await pool.query(
     `INSERT INTO contas (
       nome, vencimento, valor, categoria, tipo_cartao, paga, conta_user, organization,
-      grupo_parcelamento, parcela_atual, total_parcelas
-    ) VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, $8, $9, $10)`,
+      grupo_parcelamento, parcela_atual, total_parcelas,
+      grupo_recorrencia, recorrencia_atual, total_recorrencias
+    ) VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, $8, $9, $10, $11, $12, $13)`,
     [
       conta.nome,
       conta.dataFormatada,
@@ -86,6 +96,9 @@ export async function addConta(conta) {
       conta.grupo_parcelamento || null,
       conta.parcela_atual || null,
       conta.total_parcelas || null,
+      conta.grupo_recorrencia || null,
+      conta.recorrencia_atual || null,
+      conta.total_recorrencias || null,
     ]
   );
 }
@@ -109,8 +122,9 @@ export async function addContasParceladas(conta, totalParcelas) {
       await client.query(
         `INSERT INTO contas (
           nome, vencimento, valor, categoria, tipo_cartao, paga, conta_user, organization,
-          grupo_parcelamento, parcela_atual, total_parcelas
-        ) VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, $8, $9, $10)`,
+          grupo_parcelamento, parcela_atual, total_parcelas,
+          grupo_recorrencia, recorrencia_atual, total_recorrencias
+        ) VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, $8, $9, $10, NULL, NULL, NULL)`,
         [
           parcela.nome,
           parcela.dataFormatada,
@@ -136,11 +150,86 @@ export async function addContasParceladas(conta, totalParcelas) {
   }
 }
 
+/**
+ * Cria N recorrências mensais em transação atômica.
+ */
+export async function addContasRecorrentes(conta, totalRecorrencias) {
+  const definicoes = gerarDefinicoesRecorrencia({
+    nome: conta.nome,
+    valor: conta.valor,
+    totalRecorrencias,
+    dataFormatada: conta.dataFormatada,
+  });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    for (const item of definicoes) {
+      await client.query(
+        `INSERT INTO contas (
+          nome, vencimento, valor, categoria, tipo_cartao, paga, conta_user, organization,
+          grupo_parcelamento, parcela_atual, total_parcelas,
+          grupo_recorrencia, recorrencia_atual, total_recorrencias
+        ) VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, NULL, NULL, NULL, $8, $9, $10)`,
+        [
+          item.nome,
+          item.dataFormatada,
+          item.valor,
+          conta.categoria,
+          conta.tipo_cartao,
+          conta.conta_user,
+          conta.organization,
+          item.grupoRecorrencia,
+          item.recorrenciaAtual,
+          item.totalRecorrencias,
+        ]
+      );
+    }
+
+    await client.query('COMMIT');
+    return definicoes.length;
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
 export async function updateConta(conta) {
   await pool.query(
     'UPDATE contas SET nome = $1, vencimento = $2, valor = $3, categoria = $4, tipo_cartao = $5 WHERE id = $6',
     [conta.nome, conta.dataFormatada, conta.valor, conta.categoria, conta.tipo_cartao, conta.id]
   );
+}
+
+function obterMetaGrupo(conta) {
+  if (conta.grupo_parcelamento && conta.parcela_atual && conta.total_parcelas) {
+    return {
+      tipo: 'parcelamento',
+      groupColumn: 'grupo_parcelamento',
+      currentColumn: 'parcela_atual',
+      totalColumn: 'total_parcelas',
+      groupId: conta.grupo_parcelamento,
+      atual: conta.parcela_atual,
+      total: conta.total_parcelas,
+    };
+  }
+
+  if (conta.grupo_recorrencia && conta.recorrencia_atual && conta.total_recorrencias) {
+    return {
+      tipo: 'recorrencia',
+      groupColumn: 'grupo_recorrencia',
+      currentColumn: 'recorrencia_atual',
+      totalColumn: 'total_recorrencias',
+      groupId: conta.grupo_recorrencia,
+      atual: conta.recorrencia_atual,
+      total: conta.total_recorrencias,
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -153,28 +242,30 @@ export async function updateContaComEscopo(conta, escopo = 'apenas_esta') {
     return false;
   }
 
+  const metaGrupo = obterMetaGrupo(atual);
   const nomeBase = extrairNomeBase(conta.nome);
-  const escopoFinal = !atual.grupo_parcelamento ? 'apenas_esta' : escopo;
+  const escopoFinal = !metaGrupo ? 'apenas_esta' : escopo;
 
   if (escopoFinal === 'apenas_esta') {
     let nomeFinal = conta.nome;
-    if (atual.grupo_parcelamento && atual.parcela_atual && atual.total_parcelas) {
-      nomeFinal = formatarNomeParcela(nomeBase, atual.parcela_atual, atual.total_parcelas);
+    if (metaGrupo?.tipo === 'parcelamento') {
+      nomeFinal = formatarNomeParcela(nomeBase, metaGrupo.atual, metaGrupo.total);
     }
     await updateConta({ ...conta, nome: nomeFinal });
     return true;
   }
 
-  const params = [atual.grupo_parcelamento];
-  let filtro = 'grupo_parcelamento = $1';
+  const params = [metaGrupo.groupId];
+  let filtro = `${metaGrupo.groupColumn} = $1`;
 
   if (escopoFinal === 'esta_e_futuras') {
-    filtro += ' AND parcela_atual >= $2';
-    params.push(atual.parcela_atual);
+    filtro += ` AND ${metaGrupo.currentColumn} >= $2`;
+    params.push(metaGrupo.atual);
   }
 
   const { rows: parcelas } = await pool.query(
-    `SELECT id, parcela_atual, total_parcelas FROM contas WHERE ${filtro} ORDER BY parcela_atual`,
+    `SELECT id, ${metaGrupo.currentColumn} AS atual, ${metaGrupo.totalColumn} AS total
+     FROM contas WHERE ${filtro} ORDER BY ${metaGrupo.currentColumn}`,
     params
   );
 
@@ -183,14 +274,17 @@ export async function updateContaComEscopo(conta, escopo = 'apenas_esta') {
     await client.query('BEGIN');
 
     for (const parcela of parcelas) {
-      const nomeFinal = formatarNomeParcela(nomeBase, parcela.parcela_atual, parcela.total_parcelas);
+      const nomeFinal =
+        metaGrupo.tipo === 'parcelamento'
+          ? formatarNomeParcela(nomeBase, parcela.atual, parcela.total)
+          : nomeBase;
       const vencimentoFinal =
         escopoFinal === 'todas' || escopoFinal === 'esta_e_futuras'
           ? recalcularVencimentosGrupo({
               dataFormatadaAnchor: conta.dataFormatada,
-              parcelaAtualAnchor: atual.parcela_atual,
-              parcelaAtual: parcela.parcela_atual,
-              totalParcelas: parcela.total_parcelas,
+              parcelaAtualAnchor: metaGrupo.atual,
+              parcelaAtual: parcela.atual,
+              totalParcelas: parcela.total,
             })
           : conta.dataFormatada;
 
@@ -244,6 +338,20 @@ export async function getContasPendentes(ano, mes, organization) {
   if (result.rows.length === 0) {
     return [];
   }
+  return result.rows.map(mapContaRow);
+}
+
+/** Todas as contas pendentes da organização (sem filtro de mês — dashboard de cartões). */
+export async function getContasPendentesOrganizacao(organization) {
+  const query = `
+    SELECT ${CAMPOS_CONTA}
+    FROM contas c
+    LEFT JOIN public.tipo_cartao tc ON tc.id = c.tipo_cartao
+    WHERE c.paga = FALSE
+      AND c.organization = $1
+    ORDER BY c.vencimento, c.id`;
+
+  const result = await pool.query(query, [organization]);
   return result.rows.map(mapContaRow);
 }
 
@@ -314,23 +422,25 @@ export async function excluirConta(id, escopo = 'apenas_esta') {
     return false;
   }
 
-  if (!atual.grupo_parcelamento || escopo === 'apenas_esta') {
+  const metaGrupo = obterMetaGrupo(atual);
+
+  if (!metaGrupo || escopo === 'apenas_esta') {
     const result = await pool.query('DELETE FROM contas WHERE id = $1', [id]);
     return result.rowCount > 0;
   }
 
   if (escopo === 'todas') {
     const result = await pool.query(
-      'DELETE FROM contas WHERE grupo_parcelamento = $1',
-      [atual.grupo_parcelamento]
+      `DELETE FROM contas WHERE ${metaGrupo.groupColumn} = $1`,
+      [metaGrupo.groupId]
     );
     return result.rowCount > 0;
   }
 
   if (escopo === 'esta_e_futuras') {
     const result = await pool.query(
-      'DELETE FROM contas WHERE grupo_parcelamento = $1 AND parcela_atual >= $2',
-      [atual.grupo_parcelamento, atual.parcela_atual]
+      `DELETE FROM contas WHERE ${metaGrupo.groupColumn} = $1 AND ${metaGrupo.currentColumn} >= $2`,
+      [metaGrupo.groupId, metaGrupo.atual]
     );
     return result.rowCount > 0;
   }
@@ -344,7 +454,8 @@ export async function getContaID(id) {
     SELECT id, nome,
            TO_CHAR(vencimento, 'YYYY-MM-DD') as vencimento,
            valor, categoria, tipo_cartao,
-           grupo_parcelamento, parcela_atual, total_parcelas
+           grupo_parcelamento, parcela_atual, total_parcelas,
+           grupo_recorrencia, recorrencia_atual, total_recorrencias
     FROM contas
     WHERE id = $1;
   `;
@@ -359,5 +470,9 @@ export async function getContaID(id) {
     valor: parseFloat(conta.valor) || 0,
     parcela_atual: conta.parcela_atual != null ? parseInt(conta.parcela_atual, 10) : null,
     total_parcelas: conta.total_parcelas != null ? parseInt(conta.total_parcelas, 10) : null,
+    recorrencia_atual:
+      conta.recorrencia_atual != null ? parseInt(conta.recorrencia_atual, 10) : null,
+    total_recorrencias:
+      conta.total_recorrencias != null ? parseInt(conta.total_recorrencias, 10) : null,
   };
 }

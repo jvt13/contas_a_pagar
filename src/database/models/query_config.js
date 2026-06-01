@@ -10,22 +10,32 @@ import pool from '../conexao.js';
  * @param {number} numero_parcelas - Número de parcelas.
  * @returns {Promise<Object>} Objeto com o ID do novo registro.
  */
-export async function insert(nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas) {
+export async function insert(nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas, limite_credito) {
     console.log('Inserindo novo tipo de cartão:', {
         nome,
         tipo_cartao,
         vencimento,
         dia_util,
-        numero_parcelas
+        numero_parcelas,
+        limite_credito,
     });
     const sql = `
-    INSERT INTO tipo_cartao (nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas)
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
+    INSERT INTO tipo_cartao (nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas, limite_credito)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
     RETURNING id
   `;
 
     try {
-        const res = await pool.query(sql, [nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas]);
+        const res = await pool.query(sql, [
+            nome,
+            tipo_cartao,
+            vencimento,
+            dia_util,
+            conta_user,
+            organization,
+            numero_parcelas ?? null,
+            limite_credito ?? null,
+        ]);
         console.log('Novo tipo de cartão inserido com ID:', res.rows[0].id);
         return res.rows[0];
     } catch (err) {
@@ -77,17 +87,26 @@ export async function selectId(id) {
  * @param {number} numero_parcelas - Novo número de parcelas.
  * @returns {Promise<Object>} Dados atualizados.
  */
-export async function update(id, nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas) {
-    // Define valor padrão para numero_parcelas se necessário
+export async function update(id, nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas, limite_credito) {
     const sql = `
     UPDATE tipo_cartao
-    SET nome = $1, tipo_cartao = $2, vencimento = $3, dia_util = $4, conta_user = $5, organization = $6, numero_parcelas = $7
-    WHERE id = $8
+    SET nome = $1, tipo_cartao = $2, vencimento = $3, dia_util = $4, conta_user = $5, organization = $6, numero_parcelas = $7, limite_credito = $8
+    WHERE id = $9
     RETURNING *
   `;
 
     try {
-        const res = await pool.query(sql, [nome, tipo_cartao, vencimento, dia_util, conta_user, organization, numero_parcelas, id]);
+        const res = await pool.query(sql, [
+            nome,
+            tipo_cartao,
+            vencimento,
+            dia_util,
+            conta_user,
+            organization,
+            numero_parcelas ?? null,
+            limite_credito ?? null,
+            id,
+        ]);
         console.log('Cartão atualizado:', res.rows[0]);
         return res.rows[0];
     } catch (err) {

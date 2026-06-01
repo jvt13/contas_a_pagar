@@ -125,6 +125,8 @@ export async function createTablesIfNotExist() {
     await client.query(createTablesQuery);
     console.log('Tabelas criadas ou já existentes.');
     await migrateParcelamentoColumns(client);
+    await migrateRecorrenciaColumns(client);
+    await migrateLimiteCreditoCartao(client);
   } catch (err) {
     console.error('Erro ao criar as tabelas:', err);
     throw err;
@@ -150,4 +152,33 @@ async function migrateParcelamentoColumns(client) {
       WHERE grupo_parcelamento IS NOT NULL;
   `);
   console.log('Colunas de parcelamento verificadas.');
+}
+
+/**
+ * Adiciona colunas de recorrência em contas (idempotente).
+ */
+async function migrateRecorrenciaColumns(client) {
+  await client.query(`
+    ALTER TABLE public.contas
+      ADD COLUMN IF NOT EXISTS grupo_recorrencia UUID,
+      ADD COLUMN IF NOT EXISTS recorrencia_atual SMALLINT,
+      ADD COLUMN IF NOT EXISTS total_recorrencias SMALLINT;
+  `);
+  await client.query(`
+    CREATE INDEX IF NOT EXISTS idx_contas_grupo_recorrencia
+      ON public.contas (grupo_recorrencia)
+      WHERE grupo_recorrencia IS NOT NULL;
+  `);
+  console.log('Colunas de recorrência verificadas.');
+}
+
+/**
+ * Limite de crédito por cartão (idempotente).
+ */
+async function migrateLimiteCreditoCartao(client) {
+  await client.query(`
+    ALTER TABLE public.tipo_cartao
+      ADD COLUMN IF NOT EXISTS limite_credito NUMERIC(12,2);
+  `);
+  console.log('Coluna limite_credito em tipo_cartao verificada.');
 }

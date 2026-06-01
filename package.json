@@ -7,8 +7,12 @@
     "start": "node server.js",
     "dev": "nodemon server.js",
     "migrate:parcelamento": "node scripts/migrate-parcelamento.js",
+    "migrate:recorrencia": "node scripts/migrate-recorrencia.js",
+    "migrate:limite-cartao": "node scripts/migrate-limite-cartao.js",
     "test:parcelamento": "node src/utils/parcelamento.test.js",
-    "test:competencia": "node scripts/competencia-cartao.test.js"
+    "test:recorrencia": "node src/utils/recorrencia.test.js",
+    "test:competencia": "node scripts/competencia-cartao.test.js",
+    "test:dashboard": "node scripts/dashboard-cartao.test.js"
   },
   "keywords": [],
   "author": "",

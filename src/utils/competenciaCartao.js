@@ -59,6 +59,42 @@ function calcularVencimentoSomenteDiaPagamento(diaVencimento, dataReferencia) {
   return vencimentoAtual;
 }
 
+export function calcularProximoFechamentoContaCartaoDate(cartao, dataReferencia = new Date()) {
+  const diaFechamento = parseDia(cartao?.dia_util);
+  if (!diaFechamento) {
+    return null;
+  }
+
+  const ref = inicioDoDia(dataReferencia);
+  let anoFechamento = ref.getFullYear();
+  let mesFechamentoIndex = ref.getMonth();
+  let fechamento = dataLocal(anoFechamento, mesFechamentoIndex, diaFechamento);
+
+  if (!fechamento) {
+    return null;
+  }
+
+  if (ref > inicioDoDia(fechamento)) {
+    const next = avancarMes(anoFechamento, mesFechamentoIndex);
+    anoFechamento = next.ano;
+    mesFechamentoIndex = next.mesIndex0;
+    fechamento = dataLocal(anoFechamento, mesFechamentoIndex, diaFechamento);
+  }
+
+  return fechamento;
+}
+
+export function calcularProximoFechamentoContaCartaoISO(cartao, dataReferencia = new Date()) {
+  const date = calcularProximoFechamentoContaCartaoDate(cartao, dataReferencia);
+  if (!date) {
+    return null;
+  }
+  const dia = String(date.getDate()).padStart(2, '0');
+  const mes = String(date.getMonth() + 1).padStart(2, '0');
+  const ano = date.getFullYear();
+  return `${ano}-${mes}-${dia}`;
+}
+
 export function calcularVencimentoContaCartaoDate(cartao, dataReferencia = new Date()) {
   const diaVencimento = parseDia(cartao?.vencimento);
   const diaFechamento = parseDia(cartao?.dia_util);
@@ -73,16 +109,19 @@ export function calcularVencimentoContaCartaoDate(cartao, dataReferencia = new D
     return calcularVencimentoSomenteDiaPagamento(diaVencimento, ref);
   }
 
-  let anoFechamento = ref.getFullYear();
-  let mesFechamentoIndex = ref.getMonth();
-
-  if (ref.getDate() > diaFechamento) {
-    const next = avancarMes(anoFechamento, mesFechamentoIndex);
-    anoFechamento = next.ano;
-    mesFechamentoIndex = next.mesIndex0;
+  const fechamento = calcularProximoFechamentoContaCartaoDate(cartao, ref);
+  if (!fechamento) {
+    return null;
   }
 
-  const pagamento = avancarMes(anoFechamento, mesFechamentoIndex);
+  const anoFechamento = fechamento.getFullYear();
+  const mesFechamentoIndex = fechamento.getMonth();
+
+  const pagamento =
+    diaVencimento > diaFechamento
+      ? { ano: anoFechamento, mesIndex0: mesFechamentoIndex }
+      : avancarMes(anoFechamento, mesFechamentoIndex);
+
   return dataLocal(pagamento.ano, pagamento.mesIndex0, diaVencimento);
 }
 
@@ -108,4 +147,47 @@ export function calcularVencimentoPorCartao(cartao, { dataReferencia = new Date(
   }
 
   return null;
+}
+
+export function calcularVencimentoContaDebitoISO(diaVencimento, mesIndex0, ano, dataReferencia = new Date()) {
+  const dia = parseDia(diaVencimento);
+  const mesIndex = parseInt(String(mesIndex0), 10);
+  const year = parseInt(String(ano), 10);
+
+  if (dia === null || Number.isNaN(mesIndex) || Number.isNaN(year)) {
+    return null;
+  }
+
+  const date = dataLocal(year, mesIndex, dia);
+  if (!date) {
+    return null;
+  }
+
+  const ref = inicioDoDia(dataReferencia);
+  let target = date;
+  if (ref > inicioDoDia(date)) {
+    const next = avancarMes(year, mesIndex);
+    target = dataLocal(next.ano, next.mesIndex0, dia);
+  }
+
+  if (!target) {
+    return null;
+  }
+
+  const d = String(target.getDate()).padStart(2, '0');
+  const m = String(target.getMonth() + 1).padStart(2, '0');
+  const y = target.getFullYear();
+  return `${y}-${m}-${d}`;
+}
+
+export function extrairMesAnoCompetenciaISO(dataBR) {
+  const match = String(dataBR || '').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    mesIndex0: parseInt(match[2], 10) - 1,
+    ano: parseInt(match[3], 10),
+  };
 }

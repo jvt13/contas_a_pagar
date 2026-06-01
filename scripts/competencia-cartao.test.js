@@ -9,12 +9,13 @@ import {
 } from '../../src/utils/competenciaCartao.js';
 
 const CARTAO_ITAU = { vencimento: 1, dia_util: 22, tipo_cartao: 'credito' };
+const CARTAO_FECH7_VENC15 = { vencimento: 15, dia_util: 7, tipo_cartao: 'credito' };
 
 let ok = 0;
 let fail = 0;
 
-function test(name, hoje, esperado) {
-  const result = calcularVencimentoContaCartao(CARTAO_ITAU, parseDataReferenciaBR(hoje));
+function test(name, hoje, esperado, cartao = CARTAO_ITAU) {
+  const result = calcularVencimentoContaCartao(cartao, parseDataReferenciaBR(hoje));
   if (result === esperado) {
     ok++;
     console.log(`✓ ${name}: ${result}`);
@@ -36,6 +37,12 @@ console.log('\n=== Edge cases ===\n');
 test('No dia do fechamento (incluso na fatura corrente)', '22/05/2026', '01/06/2026');
 test('Dia após fechamento', '23/05/2026', '01/07/2026');
 test('Janeiro após fechamento dez', '29/01/2027', '01/03/2027');
+
+console.log('\n=== Cenários solicitados (fechamento 07 / vencimento 15) ===\n');
+test('Cenário A', '31/05/2026', '15/06/2026', CARTAO_FECH7_VENC15);
+test('Cenário B', '08/06/2026', '15/07/2026', CARTAO_FECH7_VENC15);
+test('Cenário C', '20/12/2026', '15/01/2027', CARTAO_FECH7_VENC15);
+test('Cenário D', '08/01/2027', '15/02/2027', CARTAO_FECH7_VENC15);
 
 const cartaoFech25Venc5 = { vencimento: 5, dia_util: 25, tipo_cartao: 'credito' };
 const r1 = calcularVencimentoContaCartao(cartaoFech25Venc5, parseDataReferenciaBR('20/05/2026'));
@@ -60,9 +67,9 @@ if (rFallback === '01/06/2026') {
 
 const cartaoFev = { vencimento: 31, dia_util: 15, tipo_cartao: 'credito' };
 const rFev = calcularVencimentoContaCartao(cartaoFev, parseDataReferenciaBR('10/01/2028'));
-if (rFev === '29/02/2028') {
+if (rFev === '31/01/2028') {
   ok++;
-  console.log('✓ Bissexto — vencimento 31 ajustado para 29/fev:', rFev);
+  console.log('✓ Vencimento > fechamento permanece no mesmo mês da fatura:', rFev);
 } else {
   fail++;
   console.error('✗ Bissexto:', rFev);
