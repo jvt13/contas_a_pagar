@@ -128,6 +128,7 @@ export async function createTablesIfNotExist() {
     await migrateRecorrenciaColumns(client);
     await migrateLimiteCreditoCartao(client);
     await migrateBancoSlugCartao(client);
+    await migrateDataLancamentoColumn(client);
   } catch (err) {
     console.error('Erro ao criar as tabelas:', err);
     throw err;
@@ -193,4 +194,20 @@ async function migrateBancoSlugCartao(client) {
       ADD COLUMN IF NOT EXISTS banco_slug VARCHAR(50);
   `);
   console.log('Coluna banco_slug em tipo_cartao verificada.');
+}
+
+/**
+ * Data de lançamento (competência Home) em contas (idempotente).
+ */
+async function migrateDataLancamentoColumn(client) {
+  await client.query(`
+    ALTER TABLE public.contas
+      ADD COLUMN IF NOT EXISTS data_lancamento DATE;
+  `);
+  await client.query(`
+    CREATE INDEX IF NOT EXISTS idx_contas_data_lancamento
+      ON public.contas (data_lancamento)
+      WHERE data_lancamento IS NOT NULL;
+  `);
+  console.log('Coluna data_lancamento em contas verificada.');
 }

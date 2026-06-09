@@ -41,7 +41,7 @@ const ref31Maio = parseDataReferenciaBR('31/05/2026');
 
 console.log('\n--- Cartão sem movimentação ---');
 {
-  const resumo = montarResumoCartao(cartaoCredito, [], ref31Maio);
+  const resumo = montarResumoCartao(cartaoCredito, [], [], ref31Maio);
   assert(resumo.utilizado === 0, 'utilizado zero');
   assert(resumo.faturaAtual === 0, 'fatura zero');
   assert(resumo.qtdLancamentos === 0, 'sem lançamentos');
@@ -57,7 +57,7 @@ console.log('\n--- Compras simples na fatura ---');
     { id: 2, tipo_cartao_id: 1, valor: 850, paga: false, vencimento: '15/06/2026' },
     { id: 3, tipo_cartao_id: 1, valor: 200, paga: false, vencimento: '15/07/2026' },
   ];
-  const resumo = montarResumoCartao(cartaoCredito, contas, ref31Maio);
+  const resumo = montarResumoCartao(cartaoCredito, contas, [], ref31Maio);
   assert(resumo.faturaAtual === 1350, 'fatura atual 1350');
   assert(resumo.utilizado === 1550, 'utilizado total 1550');
   assert(resumo.qtdLancamentos === 2, '2 lançamentos na fatura');
@@ -79,7 +79,7 @@ console.log('\n--- Parcelamento ---');
       total_parcelas: 6,
     },
   ];
-  const resumo = montarResumoCartao(cartaoCredito, contas, ref31Maio);
+  const resumo = montarResumoCartao(cartaoCredito, contas, [], ref31Maio);
   assert(resumo.faturaAtual === 100, 'parcela entra na fatura');
   assert(resumo.qtdLancamentos === 1, '1 parcela no ciclo');
 }
@@ -97,7 +97,7 @@ console.log('\n--- Recorrência ---');
       total_recorrencias: 12,
     },
   ];
-  const resumo = montarResumoCartao(cartaoCredito, contas, ref31Maio);
+  const resumo = montarResumoCartao(cartaoCredito, contas, [], ref31Maio);
   assert(resumo.faturaAtual === 89.9, 'recorrência na fatura');
 }
 
@@ -106,7 +106,7 @@ console.log('\n--- Cartão acima de 80% ---');
   const contas = [
     { id: 30, tipo_cartao_id: 1, valor: 4200, paga: false, vencimento: '15/06/2026' },
   ];
-  const resumo = montarResumoCartao(cartaoCredito, contas, ref31Maio);
+  const resumo = montarResumoCartao(cartaoCredito, contas, [], ref31Maio);
   assert(resumo.percentualUtilizado === 84, '84% utilizado');
   assert(classificarUtilizacao(resumo.percentualUtilizado) === 'critico', 'faixa crítica');
 }
@@ -114,7 +114,7 @@ console.log('\n--- Cartão acima de 80% ---');
 console.log('\n--- Virada de ano ---');
 {
   const ref31Dez = parseDataReferenciaBR('31/12/2026');
-  const resumo = montarResumoCartao(cartaoCredito, [], ref31Dez);
+  const resumo = montarResumoCartao(cartaoCredito, [], [], ref31Dez);
   assert(resumo.proximoFechamento === '07/01/2027', 'fechamento jan/2027');
   assert(resumo.proximoVencimento === '15/01/2027', 'vencimento jan/2027');
 }

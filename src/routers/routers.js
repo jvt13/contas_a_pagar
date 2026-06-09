@@ -46,6 +46,8 @@ router.delete('/delete_cartao/:id', controller.excluirCartao);
 
 /*---------- JSON endpoints -------------*/
 router.post('/dados_tab', controller.getDadosConta);
+router.post('/contas_lancadas', controller.getContasLancadas);
+router.get('/contas_lancadas', controller.getContasLancadas);
 router.post('/limit_list', controller.getLimite);
 
 export default router;

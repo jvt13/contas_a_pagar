@@ -15,6 +15,7 @@ const CAMPOS_CONTA = `
   tc.nome as tipo_cartao,
   c.categoria,
   c.vencimento,
+  c.data_lancamento,
   c.valor,
   c.organization,
   c.conta_user,
@@ -34,6 +35,9 @@ function mapContaRow(conta) {
     ...conta,
     valor: parseFloat(conta.valor) || 0,
     vencimento: format(new Date(conta.vencimento), 'dd/MM/yyyy'),
+    data_lancamento: conta.data_lancamento
+      ? format(new Date(conta.data_lancamento), 'dd/MM/yyyy')
+      : null,
     parcela_atual: conta.parcela_atual != null ? parseInt(conta.parcela_atual, 10) : null,
     total_parcelas: conta.total_parcelas != null ? parseInt(conta.total_parcelas, 10) : null,
     recorrencia_atual: conta.recorrencia_atual != null ? parseInt(conta.recorrencia_atual, 10) : null,
@@ -65,6 +69,27 @@ export async function getContas(mes, ano, organization) {
   return result.rows.map(mapContaRow);
 }
 
+/** Contas lançadas no mês (Home — eixo data_lancamento). */
+export async function getContasLancadasNoMes(mes, ano, organization) {
+  const mesInt = Number.isInteger(parseInt(mes)) ? parseInt(mes) : null;
+  const anoInt = Number.isInteger(parseInt(ano)) ? parseInt(ano) : null;
+  const key_share = organization;
+
+  const query = `
+    SELECT ${CAMPOS_CONTA}
+    FROM contas c
+    LEFT JOIN public.tipo_cartao tc ON tc.id = c.tipo_cartao
+    WHERE
+      ($1::integer IS NULL OR EXTRACT(MONTH FROM c.data_lancamento) = $1::integer)
+      AND ($2::integer IS NULL OR EXTRACT(YEAR FROM c.data_lancamento) = $2::integer)
+      AND c.organization = $3
+    ORDER BY c.data_lancamento, c.id;
+  `;
+
+  const result = await pool.query(query, [mesInt, anoInt, key_share]);
+  return result.rows.map(mapContaRow);
+}
+
 export async function getContaRaw(id) {
   const query = `
     SELECT id, nome, vencimento, valor, categoria, tipo_cartao,
@@ -79,18 +104,21 @@ export async function getContaRaw(id) {
 }
 
 export async function addConta(conta) {
+  const paga = conta.paga === true;
   await pool.query(
     `INSERT INTO contas (
-      nome, vencimento, valor, categoria, tipo_cartao, paga, conta_user, organization,
+      nome, vencimento, data_lancamento, valor, categoria, tipo_cartao, paga, conta_user, organization,
       grupo_parcelamento, parcela_atual, total_parcelas,
       grupo_recorrencia, recorrencia_atual, total_recorrencias
-    ) VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, $8, $9, $10, $11, $12, $13)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
     [
       conta.nome,
       conta.dataFormatada,
+      conta.dataLancamentoFormatada,
       conta.valor,
       conta.categoria,
       conta.tipo_cartao,
+      paga,
       conta.conta_user,
       conta.organization,
       conta.grupo_parcelamento || null,
@@ -113,6 +141,7 @@ export async function addContasParceladas(conta, totalParcelas) {
     totalParcelas,
     dataFormatada: conta.dataFormatada,
   });
+  const paga = conta.paga === true;
 
   const client = await pool.connect();
   try {
@@ -121,16 +150,18 @@ export async function addContasParceladas(conta, totalParcelas) {
     for (const parcela of definicoes) {
       await client.query(
         `INSERT INTO contas (
-          nome, vencimento, valor, categoria, tipo_cartao, paga, conta_user, organization,
+          nome, vencimento, data_lancamento, valor, categoria, tipo_cartao, paga, conta_user, organization,
           grupo_parcelamento, parcela_atual, total_parcelas,
           grupo_recorrencia, recorrencia_atual, total_recorrencias
-        ) VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, $8, $9, $10, NULL, NULL, NULL)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NULL, NULL, NULL)`,
         [
           parcela.nome,
           parcela.dataFormatada,
+          conta.dataLancamentoFormatada,
           parcela.valor,
           conta.categoria,
           conta.tipo_cartao,
+          paga,
           conta.conta_user,
           conta.organization,
           parcela.grupoParcelamento,
@@ -160,6 +191,7 @@ export async function addContasRecorrentes(conta, totalRecorrencias) {
     totalRecorrencias,
     dataFormatada: conta.dataFormatada,
   });
+  const paga = conta.paga === true;
 
   const client = await pool.connect();
   try {
@@ -168,16 +200,18 @@ export async function addContasRecorrentes(conta, totalRecorrencias) {
     for (const item of definicoes) {
       await client.query(
         `INSERT INTO contas (
-          nome, vencimento, valor, categoria, tipo_cartao, paga, conta_user, organization,
+          nome, vencimento, data_lancamento, valor, categoria, tipo_cartao, paga, conta_user, organization,
           grupo_parcelamento, parcela_atual, total_parcelas,
           grupo_recorrencia, recorrencia_atual, total_recorrencias
-        ) VALUES ($1, $2, $3, $4, $5, FALSE, $6, $7, NULL, NULL, NULL, $8, $9, $10)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL, NULL, NULL, $10, $11, $12)`,
         [
           item.nome,
           item.dataFormatada,
+          conta.dataLancamentoFormatada,
           item.valor,
           conta.categoria,
           conta.tipo_cartao,
+          paga,
           conta.conta_user,
           conta.organization,
           item.grupoRecorrencia,
@@ -352,6 +386,24 @@ export async function getContasPendentesOrganizacao(organization) {
     ORDER BY c.vencimento, c.id`;
 
   const result = await pool.query(query, [organization]);
+  return result.rows.map(mapContaRow);
+}
+
+/** Contas da organização no mês (pagas e pendentes) — dashboard débito. */
+export async function getContasOrganizacaoMes(mes, ano, organization) {
+  const mesInt = Number.isInteger(parseInt(mes, 10)) ? parseInt(mes, 10) : null;
+  const anoInt = Number.isInteger(parseInt(ano, 10)) ? parseInt(ano, 10) : null;
+
+  const query = `
+    SELECT ${CAMPOS_CONTA}
+    FROM contas c
+    LEFT JOIN public.tipo_cartao tc ON tc.id = c.tipo_cartao
+    WHERE c.organization = $1
+      AND ($2::integer IS NULL OR EXTRACT(MONTH FROM c.vencimento) = $2::integer)
+      AND ($3::integer IS NULL OR EXTRACT(YEAR FROM c.vencimento) = $3::integer)
+    ORDER BY c.vencimento, c.id`;
+
+  const result = await pool.query(query, [organization, mesInt, anoInt]);
   return result.rows.map(mapContaRow);
 }
 

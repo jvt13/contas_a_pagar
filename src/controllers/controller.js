@@ -13,6 +13,7 @@ import { verifyPassword, hashPassword } from '../utils/auth.js';
 import { calcularVencimentoContaCartaoISO } from '../utils/competenciaCartao.js';
 import { montarDashboardCartoes } from '../utils/dashboardCartao.js';
 import { resolverBanco } from '../utils/bancos.js';
+import { aplicarRegrasContaPorCartao, validarModosCreditoDebito } from '../utils/contaDebito.js';
 
 function resolverNomeCartao(nome, bancoSlug) {
   const apelido = String(nome || '').trim();
@@ -91,6 +92,73 @@ export const getDadosConta = async (req, res) => {
   }
 };
 
+export const getContasLancadas = async (req, res) => {
+  let mesSelecionado = req.body?.mes ?? req.query?.mes ?? '';
+  let anoSelecionado = req.body?.ano ?? req.query?.ano ?? '';
+  let organization = req.body?.organization ?? req.query?.organization ?? '';
+  console.log(`getContasLancadas — mês: ${mesSelecionado}, ano: ${anoSelecionado}, org: ${organization}`);
+
+  if (!anoSelecionado) {
+    return res.status(400).json({
+      success: false,
+      error: 'Ano é obrigatório',
+      message: 'Por favor, selecione um ano válido',
+    });
+  }
+
+  let mesNumero = null;
+  if (mesSelecionado !== '' && mesSelecionado != null && parseInt(mesSelecionado, 10) >= 0 && parseInt(mesSelecionado, 10) <= 11) {
+    mesNumero = parseInt(mesSelecionado, 10) + 1;
+  }
+
+  try {
+    const contas = await model.getContasLancadasNoMes(mesNumero, anoSelecionado, organization);
+
+    if (mesNumero !== null) {
+      mesSelecionado = mesNumero - 1;
+    }
+
+    const totalContas = contas.reduce((sum, c) => sum + c.valor, 0);
+    const totalContasPagas = contas.reduce((sum, c) => sum + (c.paga ? c.valor : 0), 0);
+    const totalContasPendentes = contas.reduce((sum, c) => sum + (!c.paga ? c.valor : 0), 0);
+
+    let limite_gastos = await model.getLimite(mesNumero, anoSelecionado, organization);
+    limite_gastos = limite_gastos ? limite_gastos.limite : 0;
+
+    const limiteColor =
+      mesSelecionado !== '' && mesSelecionado >= 0 && mesSelecionado <= 11
+        ? obterCor(totalContas, limite_gastos)
+        : null;
+
+    const anos = (await model.getTodosAnos()) || [];
+    if (!Array.isArray(anos)) throw new Error('O retorno de getAnos não é um array.');
+
+    const tipos_cartao = await model_config.selectAll();
+
+    return res.json({
+      success: true,
+      contas,
+      total_contas: totalContas,
+      total_contas_pagas: totalContasPagas,
+      total_contas_pendentes: totalContasPendentes,
+      total_limite: limite_gastos,
+      limiteColor,
+      mesSelecionado: mesSelecionado !== null ? mesSelecionado.toString() : '',
+      mensagemsuccesso: null,
+      anos,
+      anoSelecionado,
+      tipos_cartao,
+    });
+  } catch (err) {
+    console.error('Erro ao buscar contas lançadas:', err);
+    return res.status(500).json({
+      success: false,
+      error: 'Erro ao buscar contas lançadas.',
+      message: err.message,
+    });
+  }
+};
+
 export const getContas = async (req, res) => {
   let mesSelecionado = new Date().getMonth() + 1;
   let anoSelecionado = new Date().getFullYear();
@@ -136,11 +204,14 @@ export const getContas = async (req, res) => {
 export const addConta = async (req, res) => {
   const {
     nome, vencimento, valor, mes, ano, categoria, tipo_cartao, conta_user, organization,
-    parcelado, total_parcelas, recorrente, total_recorrencias,
+    parcelado, total_parcelas, recorrente, total_recorrencias, data_lancamento,
   } = req.body;
 
   try {
     const dataFormatada = converterParaFormatoDate(vencimento);
+    const dataLancamentoFormatada = data_lancamento
+      ? converterParaFormatoDate(data_lancamento)
+      : converterParaFormatoDate(dataAtualFormatada());
     const valorNumerico = parseFloat(valor);
     const totalParcelas = parseInt(total_parcelas, 10);
     const totalRecorrencias = parseInt(total_recorrencias, 10);
@@ -148,15 +219,27 @@ export const addConta = async (req, res) => {
     const isRecorrente =
       recorrente === true || recorrente === 'true' || recorrente === 1 || recorrente === '1';
 
-    const contaBase = {
+    let contaBase = {
       nome,
       dataFormatada,
+      dataLancamentoFormatada,
       valor: valorNumerico,
       categoria,
       tipo_cartao,
       conta_user,
       organization,
     };
+
+    const { conta: contaAjustada, ehDebito } = await aplicarRegrasContaPorCartao(contaBase);
+    contaBase = contaAjustada;
+
+    const erroModo = validarModosCreditoDebito(ehDebito, {
+      parcelado: isParcelado && totalParcelas > 1,
+      recorrente: isRecorrente && totalRecorrencias > 1,
+    });
+    if (erroModo) {
+      return res.status(400).json({ success: false, message: erroModo });
+    }
 
     if (isParcelado && isRecorrente) {
       return res.status(400).json({
@@ -502,12 +585,22 @@ export const getDashboardCartoes = async (req, res) => {
   }
 
   try {
-    const [cartoes, contas] = await Promise.all([
+    const ref = new Date();
+    const mesNumero = ref.getMonth() + 1;
+    const anoNumero = ref.getFullYear();
+
+    const [cartoes, contasPendentes, contasMes] = await Promise.all([
       model_config.selectAll(orgaId),
       model.getContasPendentesOrganizacao(orgaId),
+      model.getContasOrganizacaoMes(mesNumero, anoNumero, orgaId),
     ]);
 
-    const resumos = montarDashboardCartoes(cartoes || [], contas || [], new Date());
+    const resumos = montarDashboardCartoes(
+      cartoes || [],
+      contasPendentes || [],
+      contasMes || [],
+      ref
+    );
 
     return res.json({
       success: true,

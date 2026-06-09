@@ -5,10 +5,10 @@
 import {
   calcularProximoFechamentoContaCartaoISO,
   calcularVencimentoContaCartaoISO,
-  calcularVencimentoContaDebitoISO,
   extrairMesAnoCompetenciaISO,
 } from './competenciaCartao.js';
 import { enriquecerCartaoComBanco, resolverBancoParaCartao } from './bancos.js';
+import { isCartaoDebito } from './tipoCartao.js';
 
 function formatarDataISO(date) {
   const dia = String(date.getDate()).padStart(2, '0');
@@ -34,6 +34,20 @@ function normalizarApelido(texto) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
+function filtrarContasMesCartao(contas, cartaoId, dataReferencia) {
+  const ref = dataReferencia instanceof Date ? dataReferencia : new Date(dataReferencia);
+  const mesIndex = ref.getMonth();
+  const ano = ref.getFullYear();
+
+  return (contas || []).filter((conta) => {
+    if (normalizarCartaoId(conta) !== cartaoId) {
+      return false;
+    }
+    const competencia = extrairMesAnoCompetenciaISO(conta.vencimento);
+    return competencia && competencia.mesIndex0 === mesIndex && competencia.ano === ano;
+  });
+}
+
 export function classificarUtilizacao(percentual) {
   if (percentual == null || Number.isNaN(percentual)) {
     return 'sem_limite';
@@ -54,10 +68,60 @@ function labelTipoCartao(tipo) {
   return chave ? chave.charAt(0).toUpperCase() + chave.slice(1) : '';
 }
 
-export function montarResumoCartao(cartao, todasContas = [], dataReferencia = new Date()) {
+export function montarResumoCartao(
+  cartao,
+  contasPendentes = [],
+  contasMes = [],
+  dataReferencia = new Date()
+) {
   const cartaoId = String(cartao?.id ?? '');
   const tipo = String(cartao?.tipo_cartao || '').toLowerCase();
-  const contasCartao = (todasContas || []).filter(
+  const ehDebito = isCartaoDebito(cartao);
+  const bancoInfo = enriquecerCartaoComBanco(cartao);
+  const banco = resolverBancoParaCartao(cartao);
+
+  if (ehDebito) {
+    const contasDebitoMes = filtrarContasMesCartao(contasMes, cartaoId, dataReferencia).filter(
+      (c) => c.paga
+    );
+    const gastosNoMes = contasDebitoMes.reduce((sum, conta) => sum + parseValor(conta.valor), 0);
+
+    return {
+      id: cartao.id,
+      nome: cartao.nome || 'Sem nome',
+      nomeExibicao: banco?.nome || cartao.nome || 'Sem nome',
+      apelido:
+        banco && cartao.nome && normalizarApelido(cartao.nome) !== normalizarApelido(banco.nome)
+          ? cartao.nome
+          : null,
+      ...bancoInfo,
+      tipo,
+      tipoLabel: labelTipoCartao(tipo),
+      ehDebito: true,
+      gastosNoMes,
+      qtdLancamentos: contasDebitoMes.length,
+      contasFatura: contasDebitoMes.map((conta) => ({
+        id: conta.id,
+        nome: conta.nome,
+        valor: parseValor(conta.valor),
+        vencimento: conta.vencimento,
+        parcela_atual: conta.parcela_atual,
+        total_parcelas: conta.total_parcelas,
+        recorrencia_atual: conta.recorrencia_atual,
+        total_recorrencias: conta.total_recorrencias,
+      })),
+      limite: 0,
+      utilizado: 0,
+      disponivel: null,
+      faturaAtual: 0,
+      proximoVencimento: null,
+      proximoFechamento: null,
+      percentualUtilizado: null,
+      faixaUtilizacao: 'sem_limite',
+    };
+  }
+
+  const contasCartao = (contasPendentes || []).filter(
     (conta) => !conta.paga && normalizarCartaoId(conta) === cartaoId
   );
 
@@ -67,54 +131,37 @@ export function montarResumoCartao(cartao, todasContas = [], dataReferencia = ne
   const percentualUtilizado =
     limite > 0 ? Math.min(100, Math.round((utilizado / limite) * 1000) / 10) : null;
 
-  let proximoVencimento = null;
-  let proximoFechamento = null;
-  let contasFatura = [];
+  const vencISO = calcularVencimentoContaCartaoISO(cartao, dataReferencia);
+  const fechISO = calcularProximoFechamentoContaCartaoISO(cartao, dataReferencia);
+  const proximoVencimento = vencISO ? formatarDataISO(new Date(vencISO + 'T12:00:00')) : null;
+  const proximoFechamento = fechISO ? formatarDataISO(new Date(fechISO + 'T12:00:00')) : null;
 
-  if (tipo === 'credito') {
-    const vencISO = calcularVencimentoContaCartaoISO(cartao, dataReferencia);
-    const fechISO = calcularProximoFechamentoContaCartaoISO(cartao, dataReferencia);
-    proximoVencimento = vencISO ? formatarDataISO(new Date(vencISO + 'T12:00:00')) : null;
-    proximoFechamento = fechISO ? formatarDataISO(new Date(fechISO + 'T12:00:00')) : null;
-    if (proximoVencimento) {
-      contasFatura = contasCartao.filter((conta) => conta.vencimento === proximoVencimento);
-    }
-  } else {
-    const ref = dataReferencia instanceof Date ? dataReferencia : new Date(dataReferencia);
-    const mesIndex = ref.getMonth();
-    const ano = ref.getFullYear();
-    const vencISO = calcularVencimentoContaDebitoISO(cartao?.vencimento, mesIndex, ano, ref);
-    proximoVencimento = vencISO ? formatarDataISO(new Date(vencISO + 'T12:00:00')) : null;
-    contasFatura = contasCartao.filter((conta) => {
-      const competencia = extrairMesAnoCompetenciaISO(conta.vencimento);
-      return (
-        competencia &&
-        competencia.mesIndex0 === mesIndex &&
-        competencia.ano === ano
-      );
-    });
+  let contasFatura = [];
+  if (proximoVencimento) {
+    contasFatura = contasCartao.filter((conta) => conta.vencimento === proximoVencimento);
   }
 
   const faturaAtual = contasFatura.reduce((sum, conta) => sum + parseValor(conta.valor), 0);
-  const bancoInfo = enriquecerCartaoComBanco(cartao);
-  const banco = resolverBancoParaCartao(cartao);
 
   return {
     id: cartao.id,
     nome: cartao.nome || 'Sem nome',
     nomeExibicao: banco?.nome || cartao.nome || 'Sem nome',
-    apelido: banco && cartao.nome && normalizarApelido(cartao.nome) !== normalizarApelido(banco.nome)
-      ? cartao.nome
-      : null,
+    apelido:
+      banco && cartao.nome && normalizarApelido(cartao.nome) !== normalizarApelido(banco.nome)
+        ? cartao.nome
+        : null,
     ...bancoInfo,
     tipo,
     tipoLabel: labelTipoCartao(tipo),
+    ehDebito: false,
+    gastosNoMes: null,
     limite,
     utilizado,
     disponivel,
     faturaAtual,
     proximoVencimento,
-    proximoFechamento: tipo === 'credito' ? proximoFechamento : null,
+    proximoFechamento,
     qtdLancamentos: contasFatura.length,
     percentualUtilizado,
     faixaUtilizacao: classificarUtilizacao(percentualUtilizado),
@@ -131,6 +178,13 @@ export function montarResumoCartao(cartao, todasContas = [], dataReferencia = ne
   };
 }
 
-export function montarDashboardCartoes(cartoes = [], contas = [], dataReferencia = new Date()) {
-  return (cartoes || []).map((cartao) => montarResumoCartao(cartao, contas, dataReferencia));
+export function montarDashboardCartoes(
+  cartoes = [],
+  contasPendentes = [],
+  contasMes = [],
+  dataReferencia = new Date()
+) {
+  return (cartoes || []).map((cartao) =>
+    montarResumoCartao(cartao, contasPendentes, contasMes, dataReferencia)
+  );
 }
