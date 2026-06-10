@@ -11,13 +11,15 @@
     "migrate:limite-cartao": "node scripts/migrate-limite-cartao.js",
     "migrate:banco-cartao": "node scripts/migrate-banco-cartao.js",
     "migrate:data-lancamento": "node scripts/migrate-data-lancamento.js",
+    "migrate:subcategoria": "node scripts/migrate-subcategoria.js",
     "test:parcelamento": "node src/utils/parcelamento.test.js",
     "test:recorrencia": "node src/utils/recorrencia.test.js",
     "test:competencia": "node scripts/competencia-cartao.test.js",
     "test:dashboard": "node scripts/dashboard-cartao.test.js",
     "test:bancos": "node scripts/bancos.test.js",
     "test:debito": "node scripts/debito-cartao.test.js",
-    "test:data-lancamento": "node scripts/data-lancamento.test.js"
+    "test:data-lancamento": "node scripts/data-lancamento.test.js",
+    "test:subcategoria": "node scripts/subcategoria.test.js"
   },
   "keywords": [],
   "author": "",

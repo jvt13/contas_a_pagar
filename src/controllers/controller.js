@@ -203,7 +203,7 @@ export const getContas = async (req, res) => {
 
 export const addConta = async (req, res) => {
   const {
-    nome, vencimento, valor, mes, ano, categoria, tipo_cartao, conta_user, organization,
+    nome, vencimento, valor, mes, ano, categoria, subcategoria, tipo_cartao, conta_user, organization,
     parcelado, total_parcelas, recorrente, total_recorrencias, data_lancamento,
   } = req.body;
 
@@ -225,6 +225,7 @@ export const addConta = async (req, res) => {
       dataLancamentoFormatada,
       valor: valorNumerico,
       categoria,
+      subcategoria: subcategoria || null,
       tipo_cartao,
       conta_user,
       organization,
@@ -285,7 +286,7 @@ export const addConta = async (req, res) => {
 
 export const updateConta = async (req, res) => {
   const {
-    id, nome, vencimento, valor, categoria, tipo_cartao, conta_user, organization, escopo,
+    id, nome, vencimento, valor, categoria, subcategoria, tipo_cartao, conta_user, organization, escopo,
   } = req.body;
 
   try {
@@ -295,7 +296,7 @@ export const updateConta = async (req, res) => {
       : 'apenas_esta';
 
     await model.updateContaComEscopo(
-      { id, nome, dataFormatada, valor, categoria, tipo_cartao, conta_user, organization },
+      { id, nome, dataFormatada, valor, categoria, subcategoria: subcategoria || null, tipo_cartao, conta_user, organization },
       escopoValido
     );
     return getDadosConta(req, res);

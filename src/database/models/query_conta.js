@@ -14,6 +14,7 @@ const CAMPOS_CONTA = `
   c.nome,
   tc.nome as tipo_cartao,
   c.categoria,
+  c.subcategoria,
   c.vencimento,
   c.data_lancamento,
   c.valor,
@@ -92,7 +93,7 @@ export async function getContasLancadasNoMes(mes, ano, organization) {
 
 export async function getContaRaw(id) {
   const query = `
-    SELECT id, nome, vencimento, valor, categoria, tipo_cartao,
+    SELECT id, nome, vencimento, valor, categoria, subcategoria, tipo_cartao,
            grupo_parcelamento, parcela_atual, total_parcelas,
            grupo_recorrencia, recorrencia_atual, total_recorrencias,
            organization
@@ -107,16 +108,17 @@ export async function addConta(conta) {
   const paga = conta.paga === true;
   await pool.query(
     `INSERT INTO contas (
-      nome, vencimento, data_lancamento, valor, categoria, tipo_cartao, paga, conta_user, organization,
+      nome, vencimento, data_lancamento, valor, categoria, subcategoria, tipo_cartao, paga, conta_user, organization,
       grupo_parcelamento, parcela_atual, total_parcelas,
       grupo_recorrencia, recorrencia_atual, total_recorrencias
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
     [
       conta.nome,
       conta.dataFormatada,
       conta.dataLancamentoFormatada,
       conta.valor,
       conta.categoria,
+      conta.subcategoria || null,
       conta.tipo_cartao,
       paga,
       conta.conta_user,
@@ -150,16 +152,17 @@ export async function addContasParceladas(conta, totalParcelas) {
     for (const parcela of definicoes) {
       await client.query(
         `INSERT INTO contas (
-          nome, vencimento, data_lancamento, valor, categoria, tipo_cartao, paga, conta_user, organization,
+          nome, vencimento, data_lancamento, valor, categoria, subcategoria, tipo_cartao, paga, conta_user, organization,
           grupo_parcelamento, parcela_atual, total_parcelas,
           grupo_recorrencia, recorrencia_atual, total_recorrencias
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NULL, NULL, NULL)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NULL, NULL, NULL)`,
         [
           parcela.nome,
           parcela.dataFormatada,
           conta.dataLancamentoFormatada,
           parcela.valor,
           conta.categoria,
+          conta.subcategoria || null,
           conta.tipo_cartao,
           paga,
           conta.conta_user,
@@ -200,16 +203,17 @@ export async function addContasRecorrentes(conta, totalRecorrencias) {
     for (const item of definicoes) {
       await client.query(
         `INSERT INTO contas (
-          nome, vencimento, data_lancamento, valor, categoria, tipo_cartao, paga, conta_user, organization,
+          nome, vencimento, data_lancamento, valor, categoria, subcategoria, tipo_cartao, paga, conta_user, organization,
           grupo_parcelamento, parcela_atual, total_parcelas,
           grupo_recorrencia, recorrencia_atual, total_recorrencias
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NULL, NULL, NULL, $10, $11, $12)`,
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULL, NULL, NULL, $11, $12, $13)`,
         [
           item.nome,
           item.dataFormatada,
           conta.dataLancamentoFormatada,
           item.valor,
           conta.categoria,
+          conta.subcategoria || null,
           conta.tipo_cartao,
           paga,
           conta.conta_user,
@@ -233,8 +237,8 @@ export async function addContasRecorrentes(conta, totalRecorrencias) {
 
 export async function updateConta(conta) {
   await pool.query(
-    'UPDATE contas SET nome = $1, vencimento = $2, valor = $3, categoria = $4, tipo_cartao = $5 WHERE id = $6',
-    [conta.nome, conta.dataFormatada, conta.valor, conta.categoria, conta.tipo_cartao, conta.id]
+    'UPDATE contas SET nome = $1, vencimento = $2, valor = $3, categoria = $4, subcategoria = $5, tipo_cartao = $6 WHERE id = $7',
+    [conta.nome, conta.dataFormatada, conta.valor, conta.categoria, conta.subcategoria || null, conta.tipo_cartao, conta.id]
   );
 }
 
@@ -323,8 +327,8 @@ export async function updateContaComEscopo(conta, escopo = 'apenas_esta') {
           : conta.dataFormatada;
 
       await client.query(
-        `UPDATE contas SET nome = $1, vencimento = $2, valor = $3, categoria = $4, tipo_cartao = $5 WHERE id = $6`,
-        [nomeFinal, vencimentoFinal, conta.valor, conta.categoria, conta.tipo_cartao, parcela.id]
+        `UPDATE contas SET nome = $1, vencimento = $2, valor = $3, categoria = $4, subcategoria = $5, tipo_cartao = $6 WHERE id = $7`,
+        [nomeFinal, vencimentoFinal, conta.valor, conta.categoria, conta.subcategoria || null, conta.tipo_cartao, parcela.id]
       );
     }
 
@@ -505,7 +509,7 @@ export async function getContaID(id) {
   const query = `
     SELECT id, nome,
            TO_CHAR(vencimento, 'YYYY-MM-DD') as vencimento,
-           valor, categoria, tipo_cartao,
+           valor, categoria, subcategoria, tipo_cartao,
            grupo_parcelamento, parcela_atual, total_parcelas,
            grupo_recorrencia, recorrencia_atual, total_recorrencias
     FROM contas

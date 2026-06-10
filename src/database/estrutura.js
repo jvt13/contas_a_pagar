@@ -129,6 +129,7 @@ export async function createTablesIfNotExist() {
     await migrateLimiteCreditoCartao(client);
     await migrateBancoSlugCartao(client);
     await migrateDataLancamentoColumn(client);
+    await migrateSubcategoriaColumn(client);
   } catch (err) {
     console.error('Erro ao criar as tabelas:', err);
     throw err;
@@ -210,4 +211,15 @@ async function migrateDataLancamentoColumn(client) {
       WHERE data_lancamento IS NOT NULL;
   `);
   console.log('Coluna data_lancamento em contas verificada.');
+}
+
+/**
+ * Subcategoria opcional em contas (idempotente).
+ */
+async function migrateSubcategoriaColumn(client) {
+  await client.query(`
+    ALTER TABLE public.contas
+      ADD COLUMN IF NOT EXISTS subcategoria VARCHAR(50);
+  `);
+  console.log('Coluna subcategoria em contas verificada.');
 }

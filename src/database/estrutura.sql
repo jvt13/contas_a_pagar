@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS public.contas (
   data_lancamento DATE,
   valor NUMERIC(10, 2) NOT NULL,
   categoria VARCHAR(50),
+  subcategoria VARCHAR(50),
   tipo_cartao INTEGER,
   paga BOOLEAN DEFAULT FALSE,
   conta_user INTEGER,
